@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai-development-flow:verification-result:v2",
+  "title": "Deterministic verifier result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "resultId",
+    "verifierId",
+    "taskId",
+    "baselineId",
+    "specDigest",
+    "subjectRevision",
+    "taskPacketDigest",
+    "controlDigest",
+    "subjectContentDigest",
+    "definitionDigest",
+    "inputDigest",
+    "startedAt",
+    "completedAt",
+    "durationMs",
+    "status",
+    "exitCode",
+    "cacheHit",
+    "evidenceLevel",
+    "outputDigest",
+    "summary",
+    "artifactRefs",
+    "sideEffect",
+    "expectedTaskDigest",
+    "worktreeDigest",
+    "complete",
+    "requiredTier",
+    "executedTier",
+    "resultDigest"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "resultId": {
+      "$ref": "#/$defs/id"
+    },
+    "verifierId": {
+      "$ref": "#/$defs/id"
+    },
+    "taskId": {
+      "$ref": "#/$defs/id"
+    },
+    "baselineId": {
+      "$ref": "#/$defs/id"
+    },
+    "specDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "subjectRevision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "taskPacketDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "controlDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "subjectContentDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "definitionDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "inputDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "startedAt": {
+      "$ref": "#/$defs/dateTime"
+    },
+    "completedAt": {
+      "$ref": "#/$defs/dateTime"
+    },
+    "durationMs": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "status": {
+      "enum": [
+        "pass",
+        "fail",
+        "partial",
+        "error",
+        "timeout",
+        "skipped"
+      ]
+    },
+    "exitCode": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "cacheHit": {
+      "type": "boolean"
+    },
+    "evidenceLevel": {
+      "$ref": "#/$defs/evidenceLevel"
+    },
+    "outputDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "artifactRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/repoPath"
+      }
+    },
+    "sideEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "occurred",
+        "authorized"
+      ],
+      "properties": {
+        "occurred": {
+          "type": "boolean"
+        },
+        "authorized": {
+          "type": "boolean"
+        },
+        "authorizationRef": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "expectedTaskDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "worktreeDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "complete": {
+      "type": "boolean"
+    },
+    "requiredTier": {
+      "enum": [
+        "quick",
+        "deep"
+      ]
+    },
+    "executedTier": {
+      "enum": [
+        "quick",
+        "deep"
+      ]
+    },
+    "resultDigest": {
+      "$ref": "#/$defs/digest"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{1,127}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "dateTime": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,9})?(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "repoPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^\\u0000]+$"
+    },
+    "evidenceLevel": {
+      "enum": [
+        "specification",
+        "contract",
+        "runtime_stub",
+        "target_integration"
+      ]
+    }
+  }
+}

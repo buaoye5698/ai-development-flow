@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai-development-flow:decision-register:v1",
+  "title": "Product decision register",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "registerId",
+    "baselineId",
+    "status",
+    "decisions",
+    "stageGates"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "registerId": {
+      "$ref": "#/$defs/id"
+    },
+    "baselineId": {
+      "$ref": "#/$defs/id"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "partially_resolved",
+        "resolved"
+      ]
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/decision"
+      }
+    },
+    "stageGates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stageId",
+          "title",
+          "status",
+          "blockingDecisionIds",
+          "evidenceRequired",
+          "authorizationBoundary"
+        ],
+        "properties": {
+          "stageId": {
+            "$ref": "#/$defs/id"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "blocked",
+              "ready",
+              "authorized",
+              "not_authorized"
+            ]
+          },
+          "blockingDecisionIds": {
+            "$ref": "#/$defs/idList"
+          },
+          "evidenceRequired": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "authorizationBoundary": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{1,127}$"
+    },
+    "idList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "dateTime": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,9})?(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decisionId",
+        "question",
+        "status",
+        "owner",
+        "options",
+        "dependencies",
+        "blockedStageIds",
+        "relatedRequirementIds",
+        "relatedAcceptanceIds",
+        "resolutionEvidence"
+      ],
+      "properties": {
+        "decisionId": {
+          "$ref": "#/$defs/id"
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "unresolved",
+            "resolved"
+          ]
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "optionId",
+              "description"
+            ],
+            "properties": {
+              "optionId": {
+                "$ref": "#/$defs/id"
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "advantages": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "risks": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "dependencies": {
+          "$ref": "#/$defs/idList"
+        },
+        "blockedStageIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "relatedRequirementIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "relatedAcceptanceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "resolutionEvidence": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "selectedOptionId": {
+          "$ref": "#/$defs/id"
+        },
+        "decidedBy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resolvedAt": {
+          "$ref": "#/$defs/dateTime"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "status": {
+              "const": "unresolved"
+            }
+          },
+          "not": {
+            "required": [
+              "selectedOptionId",
+              "decidedBy",
+              "resolvedAt"
+            ]
+          }
+        },
+        {
+          "required": [
+            "selectedOptionId",
+            "decidedBy",
+            "resolvedAt"
+          ],
+          "properties": {
+            "status": {
+              "const": "resolved"
+            },
+            "resolutionEvidence": {
+              "type": "array",
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    }
+  }
+}

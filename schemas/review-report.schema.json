@@ -1,0 +1,291 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai-development-flow:review-report:v2",
+  "title": "Independent AI development review report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "reportId",
+    "taskId",
+    "baselineId",
+    "specDigest",
+    "taskPacketDigest",
+    "controlDigest",
+    "subjectContentDigest",
+    "subjectRevision",
+    "reviewRound",
+    "implementerContextId",
+    "reviewContextId",
+    "verdict",
+    "verificationResultRefs",
+    "evidence",
+    "findings",
+    "blockingDecisionIds",
+    "verificationResultDigests",
+    "contextDigest",
+    "createdAt"
+    ,"profileId"
+    ,"lensCoverage"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "reportId": {
+      "$ref": "#/$defs/id"
+    },
+    "taskId": {
+      "$ref": "#/$defs/id"
+    },
+    "baselineId": {
+      "$ref": "#/$defs/id"
+    },
+    "specDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "taskPacketDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "controlDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "subjectContentDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "subjectRevision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reviewRound": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "implementerContextId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reviewContextId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verdict": {
+      "enum": [
+        "pass",
+        "fail",
+        "blocked"
+      ]
+    },
+    "verificationResultRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/repoPath"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "level",
+          "status",
+          "reference"
+        ],
+        "properties": {
+          "level": {
+            "$ref": "#/$defs/evidenceLevel"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "fail",
+              "not_run",
+              "not_applicable"
+            ]
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "findingId",
+          "fingerprint",
+          "severity",
+          "category",
+          "summary",
+          "expected",
+          "observed",
+          "requirementIds",
+          "acceptanceIds",
+          "location",
+          "repairable"
+        ],
+        "properties": {
+          "findingId": {
+            "$ref": "#/$defs/id"
+          },
+          "fingerprint": {
+            "$ref": "#/$defs/digest"
+          },
+          "severity": {
+            "enum": [
+              "blocker",
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "category": {
+            "enum": [
+              "spec_conformance",
+              "behavior",
+              "security",
+              "data_integrity",
+              "safety",
+              "quality",
+              "scope",
+              "evidence"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observed": {
+            "type": "string",
+            "minLength": 1
+          },
+          "requirementIds": {
+            "$ref": "#/$defs/idList"
+          },
+          "acceptanceIds": {
+            "$ref": "#/$defs/idList"
+          },
+          "location": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path"
+            ],
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/repoPath"
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "repairable": {
+            "type": "boolean"
+          },
+          "repairHint": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "blockingDecisionIds": {
+      "$ref": "#/$defs/idList"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "verificationResultDigests": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "resultId",
+          "resultDigest"
+        ],
+        "properties": {
+          "resultId": {
+            "$ref": "#/$defs/id"
+          },
+          "resultDigest": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    },
+    "contextDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "createdAt": {
+      "$ref": "#/$defs/dateTime"
+    },
+    "profileId": {
+      "$ref": "#/$defs/id"
+    },
+    "lensCoverage": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["lensId", "status"],
+        "properties": {
+          "lensId": { "$ref": "#/$defs/id" },
+          "status": { "enum": ["covered", "not_applicable", "blocked"] },
+          "rationale": { "type": "string", "minLength": 1 },
+          "decisionId": { "$ref": "#/$defs/id" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{1,127}$"
+    },
+    "idList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "repoPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^\\u0000]+$"
+    },
+    "evidenceLevel": {
+      "enum": [
+        "specification",
+        "contract",
+        "runtime_stub",
+        "target_integration",
+        "owner",
+        "production"
+      ]
+    },
+    "dateTime": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,9})?(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    }
+  }
+}

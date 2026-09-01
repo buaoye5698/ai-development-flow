@@ -1,0 +1,43 @@
+{
+  "name": "ai-development-flow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A lightweight, reusable control plane for evidence-driven AI development.",
+  "type": "module",
+  "bin": {
+    "ai-flow": "bin/ai-flow.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "check": "node bin/ai-flow.mjs self-check && node --test",
+    "release:check": "npm run check && node tools/release-check.mjs",
+    "self-check": "node bin/ai-flow.mjs self-check",
+    "test": "node --test",
+    "test:bootstrap": "node --test tests/bootstrap-cli.test.mjs tests/upgrade-cli.test.mjs"
+  },
+  "keywords": [
+    "ai-development",
+    "specification-driven",
+    "evidence-gate"
+  ],
+  "files": [
+    "LICENSE",
+    "ai-flow.config.json",
+    "ai-dev/baseline.json",
+    "bin/",
+    "src/cli/",
+    "src/core/",
+    "src/spec/",
+    "src/task/",
+    "src/verify/",
+    "src/workflow/",
+    "src/controller/",
+    "src/metrics/",
+    "schemas/",
+    "starter/",
+    "docs/"
+  ],
+  "license": "Apache-2.0"
+}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "mapId": "DEMO-MINIMAL-IMPACT",
+  "baselineId": "DEMO-MINIMAL-BASELINE-001",
+  "rules": [
+    {
+      "ruleId": "DEMO-NORMALIZATION",
+      "pathPatterns": [
+        "src/**",
+        "tests/**"
+      ],
+      "requirementIds": [
+        "REQ-NORM-001",
+        "REQ-TYPE-001"
+      ],
+      "acceptanceIds": [
+        "AT-NORM-001",
+        "AT-TYPE-001"
+      ],
+      "verifierIds": [
+        "VERIFY-DEMO-CONTRACT"
+      ]
+    }
+  ],
+  "globalRequirementIds": [],
+  "globalVerifierIds": []
+}

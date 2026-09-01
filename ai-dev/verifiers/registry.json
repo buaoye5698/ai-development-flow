@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "registryId": "FRAMEWORK-VERIFIERS",
+  "verifiers": [
+    {
+      "verifierId": "VERIFY-FRAMEWORK-CONTRACT",
+      "title": "Framework contracts and deterministic semantics",
+      "tier": "quick",
+      "command": "node",
+      "args": [
+        "--test",
+        "tests/spec-task.test.mjs",
+        "tests/workflow-core.test.mjs",
+        "tests/workflow-security.test.mjs",
+        "tests/workflow-stale.test.mjs",
+        "tests/evidence-v2-only.test.mjs",
+        "tests/task-routing.test.mjs"
+      ],
+      "workingDirectory": ".",
+      "timeoutMs": 120000,
+      "evidenceLevel": "contract",
+      "deterministic": true,
+      "inputPatterns": [
+        "AGENTS.md",
+        "CHANGELOG.md",
+        "README.md",
+        "docs/**",
+        "schemas/**",
+        "src/cli/task-routing.mjs",
+        "src/core/**",
+        "src/metrics/**",
+        "src/spec/**",
+        "src/task/**",
+        "src/workflow/**",
+        "tests/evidence-v2-only.test.mjs",
+        "tests/spec-task.test.mjs",
+        "tests/task-routing.test.mjs",
+        "tests/workflow-core.test.mjs",
+        "tests/workflow-security.test.mjs",
+        "tests/workflow-stale.test.mjs"
+      ],
+      "environmentKeys": [],
+      "triggers": {
+        "requirementIds": [],
+        "acceptanceIds": [],
+        "pathPatterns": [],
+        "riskDomains": [],
+        "alwaysRun": false
+      },
+      "sideEffect": {
+        "kind": "none",
+        "requiresApproval": false
+      }
+    },
+    {
+      "verifierId": "VERIFY-FRAMEWORK-RUNTIME",
+      "title": "Framework runtime and golden flows",
+      "tier": "deep",
+      "command": "node",
+      "args": [
+        "--test",
+        "tests/golden-flow.test.mjs",
+        "tests/control-closure.test.mjs"
+      ],
+      "workingDirectory": ".",
+      "timeoutMs": 180000,
+      "evidenceLevel": "runtime_stub",
+      "deterministic": true,
+      "inputPatterns": [
+        "ai-flow.config.json",
+        "ai-dev/**",
+        "examples/**",
+        "schemas/**",
+        "src/controller/**",
+        "src/core/**",
+        "src/spec/**",
+        "src/task/**",
+        "src/verify/**",
+        "src/workflow/**",
+        "tests/control-closure.test.mjs",
+        "tests/golden-flow.test.mjs"
+      ],
+      "environmentKeys": [],
+      "triggers": {
+        "requirementIds": [],
+        "acceptanceIds": [],
+        "pathPatterns": [],
+        "riskDomains": [],
+        "alwaysRun": false
+      },
+      "sideEffect": {
+        "kind": "none",
+        "requiresApproval": false
+      }
+    },
+    {
+      "verifierId": "VERIFY-FRAMEWORK-TARGET",
+      "title": "Vendored CLI and target integration",
+      "tier": "deep",
+      "command": "node",
+      "args": [
+        "--test",
+        "tests/bootstrap-cli.test.mjs",
+        "tests/cli-end-to-end.test.mjs",
+        "tests/release-check.test.mjs",
+        "tests/upgrade-cli.test.mjs",
+        "tests/verify-runner.test.mjs"
+      ],
+      "workingDirectory": ".",
+      "timeoutMs": 240000,
+      "evidenceLevel": "target_integration",
+      "deterministic": true,
+      "inputPatterns": [
+        ".gitignore",
+        "AGENTS.md",
+        "CHANGELOG.md",
+        "LICENSE",
+        "README.md",
+        "ai-flow.config.json",
+        "ai-dev/**",
+        "bin/**",
+        "docs/**",
+        "package.json",
+        "schemas/**",
+        "src/**",
+        "starter/**",
+        "tests/bootstrap-cli.test.mjs",
+        "tests/cli-end-to-end.test.mjs",
+        "tests/release-check.test.mjs",
+        "tests/upgrade-cli.test.mjs",
+        "tests/verify-runner.test.mjs",
+        "tools/**"
+      ],
+      "environmentKeys": [],
+      "triggers": {
+        "requirementIds": [],
+        "acceptanceIds": [],
+        "pathPatterns": [],
+        "riskDomains": [],
+        "alwaysRun": false
+      },
+      "sideEffect": {
+        "kind": "none",
+        "requiresApproval": false
+      }
+    }
+  ],
+  "globalInvariantVerifierIds": []
+}

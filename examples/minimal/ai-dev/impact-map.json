@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "mapId": "MINIMAL-IMPACT-MAP",
+  "baselineId": "BASELINE-MINIMAL-001",
+  "rules": [
+    {
+      "ruleId": "RULE-NORMALIZE-SOURCE",
+      "pathPatterns": [
+        "examples/minimal/src/**",
+        "examples/minimal/tests/**"
+      ],
+      "requirementIds": [
+        "REQ-NORM-001"
+      ],
+      "acceptanceIds": [
+        "AT-NORM-001"
+      ],
+      "verifierIds": [
+        "VER-NORMALIZE-RUNTIME"
+      ]
+    }
+  ],
+  "globalRequirementIds": [
+    "REQ-TYPE-001"
+  ],
+  "globalVerifierIds": [
+    "VER-NORMALIZE-CONTRACT"
+  ]
+}

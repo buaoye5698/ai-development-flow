@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai-development-flow:task-packet:v2",
+  "title": "Bounded AI development task packet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "baselineId", "specDigest", "specIndexDigest", "truthDigest", "controlDigest", "truthBinding", "controlBinding", "baseRevision", "taskId", "goal", "requirementIds", "acceptanceIds", "derivation", "routing", "decisionDependencies", "scope", "assets", "review", "capabilities", "verification", "risk", "repairPolicy", "stageId", "taskKind"],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "baselineId": { "$ref": "#/$defs/id" },
+    "specDigest": { "$ref": "#/$defs/digest" },
+    "specIndexDigest": { "$ref": "#/$defs/digest" },
+    "truthDigest": { "$ref": "#/$defs/digest" },
+    "controlDigest": { "$ref": "#/$defs/digest" },
+    "truthBinding": { "$ref": "#/$defs/binding" },
+    "controlBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["components", "assetPolicyDigest", "instructionChainDigest"],
+      "properties": {
+        "components": { "$ref": "#/$defs/components" },
+        "assetPolicyDigest": { "$ref": "#/$defs/digest" },
+        "instructionChainDigest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "baseRevision": { "$ref": "#/$defs/gitCommit" },
+    "taskId": { "$ref": "#/$defs/id" },
+    "goal": { "type": "string", "minLength": 1 },
+    "requirementIds": { "$ref": "#/$defs/nonEmptyIdList" },
+    "acceptanceIds": { "$ref": "#/$defs/idList" },
+    "constraints": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "derivation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["directRequirementIds", "impactedRequirementIds", "globalInvariantIds", "blockingDecisionIds", "evidenceTargetDecisionIds", "stageGate"],
+      "properties": {
+        "directRequirementIds": { "$ref": "#/$defs/nonEmptyIdList" },
+        "impactedRequirementIds": { "$ref": "#/$defs/idList" },
+        "globalInvariantIds": { "$ref": "#/$defs/idList" },
+        "matchedImpactRuleIds": { "$ref": "#/$defs/idList" },
+        "blockingDecisionIds": { "$ref": "#/$defs/idList" },
+        "evidenceTargetDecisionIds": { "$ref": "#/$defs/idList" },
+        "stageGate": { "$ref": "#/$defs/stageGate" }
+      }
+    },
+    "routing": {
+      "type": "object", "additionalProperties": false, "required": ["capability"],
+      "properties": { "capability": { "enum": ["tool_only", "fast", "standard", "high_reasoning", "human"] } }
+    },
+    "decisionDependencies": { "type": "array", "items": { "$ref": "#/$defs/decisionDependency" } },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowedPaths", "subjectPaths", "forbiddenPaths"],
+      "properties": {
+        "allowedPaths": { "$ref": "#/$defs/scopeList" },
+        "subjectPaths": { "$ref": "#/$defs/scopeList" },
+        "forbiddenPaths": { "$ref": "#/$defs/scopeList" }
+      }
+    },
+    "assets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowedWriteClasses", "classifiedWrites", "declaredScope"],
+      "properties": {
+        "allowedWriteClasses": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/assetClass" } },
+        "classifiedWrites": { "type": "array", "items": { "$ref": "#/$defs/classifiedPath" } },
+        "declaredScope": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["pattern", "assetClasses"],
+            "properties": { "pattern": { "$ref": "#/$defs/scopePattern" }, "assetClasses": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/assetClass" } } }
+          }
+        }
+      }
+    },
+    "review": {
+      "type": "object", "additionalProperties": false, "required": ["profileId", "mandatoryLensIds", "requestedLensIds"],
+      "properties": {
+        "profileId": { "$ref": "#/$defs/id" },
+        "mandatoryLensIds": { "$ref": "#/$defs/nonEmptyIdList" },
+        "requestedLensIds": { "$ref": "#/$defs/nonEmptyIdList" }
+      }
+    },
+    "capabilities": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["capabilityId"],
+        "properties": { "capabilityId": { "$ref": "#/$defs/id" } }
+      }
+    },
+    "verification": {
+      "type": "object", "additionalProperties": false, "required": ["verifierIds", "tier", "requiredEvidenceLevel", "requiredAuthorityKinds"],
+      "properties": {
+        "verifierIds": { "$ref": "#/$defs/nonEmptyIdList" },
+        "tier": { "enum": ["quick", "deep"] },
+        "requiredEvidenceLevel": { "$ref": "#/$defs/evidenceLevel" },
+        "requiredAuthorityKinds": { "type": "array", "uniqueItems": true, "items": { "enum": ["owner_acceptance", "production_release"] } }
+      }
+    },
+    "risk": {
+      "type": "object", "additionalProperties": false, "required": ["level", "domains", "sideEffects"],
+      "properties": {
+        "level": { "enum": ["low", "medium", "high", "critical"] },
+        "domains": { "$ref": "#/$defs/nonEmptyIdList" },
+        "sideEffects": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["kind", "requiresApproval"],
+            "properties": { "kind": { "enum": ["filesystem", "network", "external_service", "physical", "production"] }, "requiresApproval": { "type": "boolean" } }
+          }
+        }
+      }
+    },
+    "repairPolicy": {
+      "type": "object", "additionalProperties": false, "required": ["maxRounds", "allowedPathsOnly", "allowedWriteClasses"],
+      "properties": {
+        "maxRounds": { "type": "integer", "minimum": 0, "maximum": 10 },
+        "allowedPathsOnly": { "const": true },
+        "allowedWriteClasses": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/assetClass" } }
+      }
+    },
+    "contextHints": {
+      "type": "object", "additionalProperties": false,
+      "properties": { "preferredPaths": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/repoPath" } }, "excludedPaths": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/repoPath" } } }
+    },
+    "stageId": { "$ref": "#/$defs/id" },
+    "taskKind": { "enum": ["implementation", "truth_proposal", "control_plane", "evidence_collection"] }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{1,127}$" },
+    "idList": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+    "nonEmptyIdList": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+    "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "gitCommit": { "type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$" },
+    "repoPath": { "type": "string", "minLength": 1, "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^\\u0000]+$" },
+    "scopePattern": { "type": "string", "minLength": 1, "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^*?\\[\\]{}\\u0000]+(?:/\\*\\*)?$" },
+    "scopeList": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/scopePattern" } },
+    "assetClass": { "enum": ["sensitive", "process", "active_control", "active_truth", "managed_implementation", "unmanaged"] },
+    "classifiedPath": {
+      "type": "object", "additionalProperties": false, "required": ["path", "assetClass"],
+      "properties": { "path": { "$ref": "#/$defs/repoPath" }, "assetClass": { "$ref": "#/$defs/assetClass" } }
+    },
+    "component": {
+      "type": "object", "additionalProperties": false, "required": ["componentId", "path", "digest"],
+      "properties": { "componentId": { "$ref": "#/$defs/id" }, "path": { "$ref": "#/$defs/repoPath" }, "digest": { "$ref": "#/$defs/digest" } }
+    },
+    "components": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/component" } },
+    "binding": { "type": "object", "additionalProperties": false, "required": ["components"], "properties": { "components": { "$ref": "#/$defs/components" } } },
+    "stageGate": {
+      "type": "object", "additionalProperties": false, "required": ["stageId", "title", "status", "blockingDecisionIds", "authorizationBoundary", "evidenceRequired", "stageGateDigest"],
+      "properties": {
+        "stageId": { "$ref": "#/$defs/id" }, "title": { "type": "string", "minLength": 1 }, "status": { "enum": ["pending", "blocked", "ready", "authorized", "not_authorized"] }, "blockingDecisionIds": { "$ref": "#/$defs/idList" }, "authorizationBoundary": { "type": "string", "minLength": 1 }, "evidenceRequired": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }, "stageGateDigest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "decisionDependency": {
+      "type": "object", "additionalProperties": false, "required": ["decisionId", "status", "selectedOptionId", "evidenceRefs", "decisionDigest"],
+      "properties": { "decisionId": { "$ref": "#/$defs/id" }, "status": { "enum": ["unresolved", "resolved"] }, "selectedOptionId": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] }, "evidenceRefs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }, "decisionDigest": { "$ref": "#/$defs/digest" } }
+    },
+    "evidenceLevel": { "enum": ["specification", "contract", "runtime_stub", "target_integration", "owner", "production"] }
+  }
+}

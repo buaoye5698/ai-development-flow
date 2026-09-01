@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "baselineId": "BASELINE-MINIMAL-001",
+  "status": "active",
+  "createdAt": "2026-08-27T00:00:00Z",
+  "canonicalSpecSourceId": "SPEC-MINIMAL-001",
+  "truthSources": [
+    {
+      "sourceId": "SPEC-MINIMAL-001",
+      "path": "examples/minimal/docs/product-spec.md",
+      "role": "product_content_truth",
+      "authority": "canonical",
+      "digest": "sha256:dc82266eba5c0dae2f7c07e7a42743f231f746378d81344510ed10fe267bd85b",
+      "description": "The only canonical product-content specification for the minimal example."
+    },
+    {
+      "sourceId": "SRC-CONTRACT-001",
+      "path": "examples/minimal/contracts/normalize.contract.json",
+      "role": "contract",
+      "authority": "authoritative_input",
+      "digest": "sha256:78764a6ca44eb38d9d3bade417fe9fb6baa33343d1f76460e4b4b0290e7391bb",
+      "description": "Executable examples supporting the canonical specification."
+    }
+  ],
+  "knownConflicts": [],
+  "decisionRegister": "examples/minimal/ai-dev/decisions/register.json"
+}

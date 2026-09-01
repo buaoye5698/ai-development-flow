@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "baselineId": "framework-current-20260830",
+  "status": "active",
+  "createdAt": "2026-08-30T00:00:00+08:00",
+  "canonicalSpecSourceId": "FRAMEWORK-SPEC",
+  "truthSources": [
+    {
+      "sourceId": "FRAMEWORK-SPEC",
+      "path": "docs/framework-spec.md",
+      "role": "product_content_truth",
+      "authority": "canonical",
+      "digest": "sha256:62ccb6cbb4edd643cdd5c1d90df297c12fc5e7aeb09c0a0c140d95ddb39f5719"
+    }
+  ],
+  "knownConflicts": [],
+  "decisionRegister": "ai-dev/decisions/register.json"
+}

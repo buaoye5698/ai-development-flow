@@ -1,0 +1,10 @@
+{
+  "goal": "Refine the minimal normalization behavior without changing its public contract",
+  "changedPaths": [
+    "src/normalize.mjs",
+    "tests/normalize.test.mjs"
+  ],
+  "directRequirementIds": [
+    "REQ-NORM-001"
+  ]
+}

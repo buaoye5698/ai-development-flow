@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "directories": [
+    "ai-dev/decisions",
+    "ai-dev/evidence",
+    "ai-dev/authorizations",
+    "ai-dev/reviews",
+    "ai-dev/runs",
+    "ai-dev/tasks",
+    "ai-dev/verifiers",
+    ".ai-flow/cache",
+    ".ai-flow/controller",
+    ".ai-flow/generated"
+  ],
+  "projectFiles": [
+    { "source": ".editorconfig", "destination": ".editorconfig", "adopt": "suggest" },
+    { "source": ".gitattributes", "destination": ".gitattributes", "adopt": "suggest" },
+    { "source": ".gitignore.tpl", "destination": ".gitignore", "adopt": "suggest" },
+    { "source": "AGENTS.md.tpl", "destination": "AGENTS.md", "adopt": "create_missing" },
+    { "source": "README.md.tpl", "destination": "README.md", "adopt": "suggest" },
+    { "source": "package.json.tpl", "destination": "package.json", "adopt": "suggest" },
+    { "source": "ai-flow.config.json.tpl", "destination": "ai-flow.config.json", "adopt": "control_plane" },
+    { "source": "ai-dev/baseline.json.tpl", "destination": "ai-dev/baseline.json", "adopt": "control_plane" },
+    { "source": "ai-dev/decisions/register.json.tpl", "destination": "ai-dev/decisions/register.json", "adopt": "control_plane" },
+    { "source": "ai-dev/impact-map.json.tpl", "destination": "ai-dev/impact-map.json", "adopt": "control_plane" },
+    { "source": "ai-dev/verifiers/registry.json.tpl", "destination": "ai-dev/verifiers/registry.json", "adopt": "control_plane" },
+    { "source": "docs/product-spec.md.tpl", "destination": "docs/product-spec.md", "adopt": "preserve_or_create" }
+  ],
+  "managedMappings": [
+    { "source": "bin", "destination": "tools/ai-flow/bin" },
+    { "source": "src/cli", "destination": "tools/ai-flow/src/cli" },
+    { "source": "src/core", "destination": "tools/ai-flow/src/core" },
+    { "source": "src/verify", "destination": "tools/ai-flow/src/verify" },
+    { "source": "src/spec", "destination": "tools/ai-flow/src/spec" },
+    { "source": "src/task", "destination": "tools/ai-flow/src/task" },
+    { "source": "src/workflow", "destination": "tools/ai-flow/src/workflow" },
+    { "source": "src/controller", "destination": "tools/ai-flow/src/controller" },
+    { "source": "src/metrics", "destination": "tools/ai-flow/src/metrics" },
+    { "source": "schemas", "destination": "tools/ai-flow/schemas" },
+    { "source": "schemas", "destination": "ai-dev/schemas" },
+    { "source": "starter", "destination": "tools/ai-flow/starter" }
+  ]
+}

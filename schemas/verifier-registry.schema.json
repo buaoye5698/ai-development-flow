@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai-development-flow:verifier-registry:v1",
+  "title": "Deterministic verifier registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "registryId",
+    "verifiers",
+    "globalInvariantVerifierIds"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "registryId": {
+      "$ref": "#/$defs/id"
+    },
+    "verifiers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "verifierId",
+          "tier",
+          "command",
+          "args",
+          "workingDirectory",
+          "timeoutMs",
+          "evidenceLevel",
+          "deterministic",
+          "inputPatterns",
+          "triggers",
+          "sideEffect"
+        ],
+        "properties": {
+          "verifierId": {
+            "$ref": "#/$defs/id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "tier": {
+            "enum": [
+              "quick",
+              "deep"
+            ]
+          },
+          "command": {
+            "type": "string",
+            "minLength": 1
+          },
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "workingDirectory": {
+            "$ref": "#/$defs/repoPath"
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3600000
+          },
+          "evidenceLevel": {
+            "$ref": "#/$defs/evidenceLevel"
+          },
+          "deterministic": {
+            "type": "boolean"
+          },
+          "inputPatterns": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/$defs/scopePattern"
+            }
+          },
+          "environmentKeys": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            }
+          },
+          "triggers": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "requirementIds",
+              "acceptanceIds",
+              "pathPatterns",
+              "riskDomains",
+              "alwaysRun"
+            ],
+            "properties": {
+              "requirementIds": {
+                "$ref": "#/$defs/idList"
+              },
+              "acceptanceIds": {
+                "$ref": "#/$defs/idList"
+              },
+              "pathPatterns": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "$ref": "#/$defs/scopePattern"
+                }
+              },
+              "riskDomains": {
+                "$ref": "#/$defs/idList"
+              },
+              "alwaysRun": {
+                "type": "boolean"
+              }
+            }
+          },
+          "sideEffect": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "requiresApproval"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "none",
+                  "filesystem",
+                  "network",
+                  "external_service",
+                  "physical",
+                  "production"
+                ]
+              },
+              "requiresApproval": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "globalInvariantVerifierIds": {
+      "$ref": "#/$defs/idList"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{1,127}$"
+    },
+    "idList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "repoPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^\\u0000]+$"
+    },
+    "scopePattern": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^*?\\[\\]{}\\u0000]+(?:/\\*\\*)?$"
+    },
+    "evidenceLevel": {
+      "enum": [
+        "specification",
+        "contract",
+        "runtime_stub",
+        "target_integration"
+      ]
+    }
+  }
+}

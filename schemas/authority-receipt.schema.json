@@ -1,0 +1,191 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai-development-flow:authority-receipt:v2",
+  "title": "Owner acceptance or production release authority receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "receiptId",
+    "kind",
+    "actorType",
+    "actorRef",
+    "taskId",
+    "taskPacketDigest",
+    "expectedTaskDigest",
+    "specDigest",
+    "controlDigest",
+    "subjectContentDigest",
+    "baselineDigest",
+    "subjectRevision",
+    "worktreeDigest",
+    "verificationResultDigests",
+    "reviewReportDigests",
+    "issuedAt",
+    "reference",
+    "receiptDigest"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "receiptId": {
+      "$ref": "#/$defs/id"
+    },
+    "kind": {
+      "enum": [
+        "owner_acceptance",
+        "production_release"
+      ]
+    },
+    "actorType": {
+      "enum": [
+        "human",
+        "external_system"
+      ]
+    },
+    "actorRef": {
+      "type": "string",
+      "minLength": 1
+    },
+    "taskId": {
+      "$ref": "#/$defs/id"
+    },
+    "taskPacketDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "expectedTaskDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "specDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "controlDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "subjectContentDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "baselineDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "subjectRevision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "worktreeDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "verificationResultDigests": {
+      "$ref": "#/$defs/verificationBindings"
+    },
+    "reviewReportDigests": {
+      "$ref": "#/$defs/reviewBindings"
+    },
+    "issuedAt": {
+      "$ref": "#/$defs/dateTime"
+    },
+    "reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "priorOwnerReceiptDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "receiptDigest": {
+      "$ref": "#/$defs/digest"
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "kind": {
+          "const": "owner_acceptance"
+        }
+      },
+      "not": {
+        "required": [
+          "priorOwnerReceiptDigest"
+        ]
+      }
+    },
+    {
+      "properties": {
+        "kind": {
+          "const": "production_release"
+        }
+      },
+      "required": [
+        "priorOwnerReceiptDigest"
+      ]
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{1,127}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "dateTime": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,9})?(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "verificationBindings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "resultId",
+          "resultDigest"
+        ],
+        "properties": {
+          "resultId": {
+            "$ref": "#/$defs/id"
+          },
+          "resultDigest": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    },
+    "reviewBindings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reportId",
+          "reportDigest",
+          "implementerContextId",
+          "reviewContextId",
+          "contextDigest"
+        ],
+        "properties": {
+          "reportId": {
+            "$ref": "#/$defs/id"
+          },
+          "reportDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "implementerContextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reviewContextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contextDigest": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    }
+  }
+}

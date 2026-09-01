@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 2,
+  "frameworkVersion": "1.0.0",
+  "projectId": "minimal-normalization",
+  "baselinePath": "examples/minimal/ai-dev/baseline.json",
+  "specAdapter": {
+    "module": "src/spec/structured-markdown.mjs",
+    "exportName": "compileStructuredMarkdown"
+  },
+  "paths": {
+    "decisions": "examples/minimal/ai-dev/decisions",
+    "tasks": "examples/minimal/ai-dev/tasks",
+    "reviews": "examples/minimal/ai-dev/reviews",
+    "runs": "examples/minimal/ai-dev/runs",
+    "evidence": "examples/minimal/ai-dev/evidence",
+    "authorizations": "examples/minimal/ai-dev/authorizations",
+    "generated": "examples/minimal/.ai-flow/generated",
+    "cache": "examples/minimal/.ai-flow/cache",
+    "controller": "examples/minimal/.ai-flow/controller"
+  },
+  "automationPolicy": {
+    "maxRepairRounds": 3,
+    "stopAfterSameFindingFingerprint": 2,
+    "freshReviewContextRequired": true,
+    "implementerCannotReviewOwnTask": true,
+    "repairWithinTaskAllowedPathsOnly": true,
+    "maxParallelVerifiers": 2,
+    "controlPaths": [
+      "AGENTS.md",
+      "ai-flow.config.json",
+      "schemas/**",
+      "src/**",
+      "examples/minimal/ai-dev/impact-map.json",
+      "examples/minimal/ai-dev/verifiers/**"
+    ],
+    "sensitivePaths": [
+      ".env",
+      ".env.local",
+      "credentials/**",
+      "secrets/**"
+    ],
+    "reviewProfile": {
+      "profileId": "minimal-default",
+      "mandatoryLensIds": [
+        "spec_conformance",
+        "scope",
+        "evidence"
+      ]
+    },
+    "stopConditions": [
+      "unresolved_decision",
+      "truth_source_conflict",
+      "same_finding_repeated",
+      "repair_oscillation",
+      "scope_expansion",
+      "side_effect_requires_approval",
+      "repair_round_limit"
+    ]
+  },
+  "evidencePolicy": {
+    "levels": [
+      "specification",
+      "contract",
+      "runtime_stub",
+      "target_integration",
+      "owner",
+      "production"
+    ],
+    "preventElevation": true
+  }
+}

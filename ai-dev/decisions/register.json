@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "registerId": "FRAMEWORK-CURRENT-DECISIONS",
+  "baselineId": "framework-current-20260830",
+  "status": "resolved",
+  "decisions": [],
+  "stageGates": [
+    {
+      "stageId": "framework-development",
+      "title": "框架开发",
+      "status": "authorized",
+      "blockingDecisionIds": [],
+      "evidenceRequired": [
+        "deterministic verification",
+        "independent review"
+      ],
+      "authorizationBoundary": "Repository-owner-approved TaskPacket scope; control-plane and external writes still require execution authorization."
+    }
+  ]
+}

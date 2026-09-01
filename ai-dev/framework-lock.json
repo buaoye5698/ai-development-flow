@@ -1,0 +1,573 @@
+{
+  "schemaVersion": 1,
+  "frameworkName": "ai-development-flow",
+  "frameworkVersion": "1.0.0",
+  "installMode": "vendored",
+  "distributionDigest": "sha256:b1f61a3f70fdbfecb963b8b259c4ae00d4e0a2a6f6090e08f981c5959aa18730",
+  "managedFiles": [
+    {
+      "path": "bin/ai-flow.mjs",
+      "digest": "sha256:ddde974b1f8911e124a9707558e18a040b575dd4650d96b0d1faa5cd2d39e24a",
+      "ownership": "framework",
+      "source": "bin/ai-flow.mjs"
+    },
+    {
+      "path": "package.json",
+      "digest": "sha256:c3619b6ff1b1764f674df62e56f4266bb61d4e879eb20938bd5bc3619fdef34c",
+      "ownership": "framework",
+      "source": "package.json"
+    },
+    {
+      "path": "schemas/authority-receipt.schema.json",
+      "digest": "sha256:8536595574796a7c17cb47b5e1b92a14987e4445fb4fd260e49369499ca621dc",
+      "ownership": "framework",
+      "source": "schemas/authority-receipt.schema.json"
+    },
+    {
+      "path": "schemas/baseline.schema.json",
+      "digest": "sha256:bd20ae4dc483b7196754c8613f9bfb95bcaf9a37e729d4604a0773192174dd34",
+      "ownership": "framework",
+      "source": "schemas/baseline.schema.json"
+    },
+    {
+      "path": "schemas/context-manifest.schema.json",
+      "digest": "sha256:b9c7c3524013b109360855adc4ff93b4794dc987bdab333c56bec9b140db261d",
+      "ownership": "framework",
+      "source": "schemas/context-manifest.schema.json"
+    },
+    {
+      "path": "schemas/decision-register.schema.json",
+      "digest": "sha256:e1971b304982f64340623768d5b44a9b3251b7c65cddbbed46b18c8911dbfb70",
+      "ownership": "framework",
+      "source": "schemas/decision-register.schema.json"
+    },
+    {
+      "path": "schemas/evidence-bundle.schema.json",
+      "digest": "sha256:646d8d8c6463135019187b703fee5dfc1e3fd53ec786b29eef2c46fedeadf704",
+      "ownership": "framework",
+      "source": "schemas/evidence-bundle.schema.json"
+    },
+    {
+      "path": "schemas/execution-authorization.schema.json",
+      "digest": "sha256:7f5796b8f87bf80bf9e004230bd048d6de85e56c2a50eb5f922b5cd17be034fc",
+      "ownership": "framework",
+      "source": "schemas/execution-authorization.schema.json"
+    },
+    {
+      "path": "schemas/framework-lock.schema.json",
+      "digest": "sha256:ea4a2f65c79358cc677b259d457a96638cea7839e09c6a409ecd6671dfde86fa",
+      "ownership": "framework",
+      "source": "schemas/framework-lock.schema.json"
+    },
+    {
+      "path": "schemas/impact-map.schema.json",
+      "digest": "sha256:deb6ce1edf933424d3acee49ee1a25e3648d34bc96b853b029a738cec672f57f",
+      "ownership": "framework",
+      "source": "schemas/impact-map.schema.json"
+    },
+    {
+      "path": "schemas/project-config.schema.json",
+      "digest": "sha256:a115be3ad9f7461778f04ee88de5ad120c333c253f6ef49721628f627431407f",
+      "ownership": "framework",
+      "source": "schemas/project-config.schema.json"
+    },
+    {
+      "path": "schemas/review-report.schema.json",
+      "digest": "sha256:559b77f4d73ab7128d4ae5ca7ebbe6123d9800907efa59744e68be24603a0478",
+      "ownership": "framework",
+      "source": "schemas/review-report.schema.json"
+    },
+    {
+      "path": "schemas/run-record.schema.json",
+      "digest": "sha256:c755c90128deb5719d002c43e0a1db251a09a50dff30de60c8bb85e367b1a1b1",
+      "ownership": "framework",
+      "source": "schemas/run-record.schema.json"
+    },
+    {
+      "path": "schemas/spec-index.schema.json",
+      "digest": "sha256:d2d972e6c16ae5b347299a4712534d4078298a6b823713c335fde89670d26c28",
+      "ownership": "framework",
+      "source": "schemas/spec-index.schema.json"
+    },
+    {
+      "path": "schemas/task-packet.schema.json",
+      "digest": "sha256:76928231f64bc0765d3fde86a15ff51a7cd659f23fc0634f4e3cd4375408e226",
+      "ownership": "framework",
+      "source": "schemas/task-packet.schema.json"
+    },
+    {
+      "path": "schemas/verification-result.schema.json",
+      "digest": "sha256:83e4549dafd730805a4a706c077ccdc7aae72d7ef19f9a0454caa41c77857ba0",
+      "ownership": "framework",
+      "source": "schemas/verification-result.schema.json"
+    },
+    {
+      "path": "schemas/verifier-registry.schema.json",
+      "digest": "sha256:d374d4ac4c2eecca1a9959087b57f1ae02574cd268f50deaf7666a6cfec9be27",
+      "ownership": "framework",
+      "source": "schemas/verifier-registry.schema.json"
+    },
+    {
+      "path": "src/cli/commands.mjs",
+      "digest": "sha256:387c39f39e47e1c00c3bab8f54dd952a98d6fb09b2d05c18980aa77513a53352",
+      "ownership": "framework",
+      "source": "src/cli/commands.mjs"
+    },
+    {
+      "path": "src/cli/constants.mjs",
+      "digest": "sha256:4560274065f7f9ff6fb6c3a11b068e43e75a494133663cf594da9674dcb63d75",
+      "ownership": "framework",
+      "source": "src/cli/constants.mjs"
+    },
+    {
+      "path": "src/cli/controller-commands.mjs",
+      "digest": "sha256:bce611c796a67a1150293efb5bdd9eaa570131c60b11c8726223302029743c05",
+      "ownership": "framework",
+      "source": "src/cli/controller-commands.mjs"
+    },
+    {
+      "path": "src/cli/digest.mjs",
+      "digest": "sha256:4f7b631809f52866448235f36a42894f6dccd3be6efabbde1c5c75e39407a002",
+      "ownership": "framework",
+      "source": "src/cli/digest.mjs"
+    },
+    {
+      "path": "src/cli/io.mjs",
+      "digest": "sha256:f2e0a963ecf9cbf54206430482d8c311c87e44188f5eb99e3f47355abcf178f3",
+      "ownership": "framework",
+      "source": "src/cli/io.mjs"
+    },
+    {
+      "path": "src/cli/main.mjs",
+      "digest": "sha256:d22e0e2d4afd2a836f0a5414cddeebd01890e2228336df0c97526bed59343dfd",
+      "ownership": "framework",
+      "source": "src/cli/main.mjs"
+    },
+    {
+      "path": "src/cli/path-safety.mjs",
+      "digest": "sha256:efc84250b71c97871c09ef95d46d7cb7dcddcc1d77a90289ba2b4a7e874ddf29",
+      "ownership": "framework",
+      "source": "src/cli/path-safety.mjs"
+    },
+    {
+      "path": "src/cli/project-artifacts.mjs",
+      "digest": "sha256:5400ae366a8008201f7a3c2bf4e5a695f7f7b9ee02cc1f9b6e3c4b3531486c3c",
+      "ownership": "framework",
+      "source": "src/cli/project-artifacts.mjs"
+    },
+    {
+      "path": "src/cli/project-runtime.mjs",
+      "digest": "sha256:783a3dbecbe867e456f085fc4fe7484af5761515257e29e9361b2b3ee8e2f2af",
+      "ownership": "framework",
+      "source": "src/cli/project-runtime.mjs"
+    },
+    {
+      "path": "src/cli/project-state.mjs",
+      "digest": "sha256:a35d2e967a2a62ef58b728d85901cf43c811163cbcb9be2cc5572d7af37beee1",
+      "ownership": "framework",
+      "source": "src/cli/project-state.mjs"
+    },
+    {
+      "path": "src/cli/scaffold.mjs",
+      "digest": "sha256:99174bb9f30190290faf0dd09d2989dd13e014a85792a94ab928e6cdf0977b15",
+      "ownership": "framework",
+      "source": "src/cli/scaffold.mjs"
+    },
+    {
+      "path": "src/cli/self-check.mjs",
+      "digest": "sha256:29e331cce97773d6ed8858187a689eb05d06b2aea6a650a434f11daff12c4ffe",
+      "ownership": "framework",
+      "source": "src/cli/self-check.mjs"
+    },
+    {
+      "path": "src/cli/spec-adapter.mjs",
+      "digest": "sha256:705ff2de20ef9cd6fd2e1744d81794734c067679e39bcf342d52f8b4af6849ef",
+      "ownership": "framework",
+      "source": "src/cli/spec-adapter.mjs"
+    },
+    {
+      "path": "src/cli/start-command.mjs",
+      "digest": "sha256:91824562b31b266b6d327e43af67fad0d0c719aa7173ba9bdf513fda5cda6a9a",
+      "ownership": "framework",
+      "source": "src/cli/start-command.mjs"
+    },
+    {
+      "path": "src/cli/static-commands.mjs",
+      "digest": "sha256:65ad68df1e16a9b3a7a9cd1c7bb9703920476bd57ae1dd7e1e8450489ae82bf3",
+      "ownership": "framework",
+      "source": "src/cli/static-commands.mjs"
+    },
+    {
+      "path": "src/cli/task-routing.mjs",
+      "digest": "sha256:6654e9e2fed0c99861e9f660c74ed5da6cb5981bdb332d4e1afab535e4129c65",
+      "ownership": "framework",
+      "source": "src/cli/task-routing.mjs"
+    },
+    {
+      "path": "src/cli/workflow-commands.mjs",
+      "digest": "sha256:4196a301c6a3e0e9a4c1a4e12793af7279b15df16253a2a866bef8cfa9131a57",
+      "ownership": "framework",
+      "source": "src/cli/workflow-commands.mjs"
+    },
+    {
+      "path": "src/controller/active-control.mjs",
+      "digest": "sha256:aec64128f9a5328e70951a5955c1348a6ff07a46349d15308e0fd79a9ce2fb16",
+      "ownership": "framework",
+      "source": "src/controller/active-control.mjs"
+    },
+    {
+      "path": "src/controller/authorization.mjs",
+      "digest": "sha256:8ea2cb66acca5a393eded0e0720186941caea2447c6491f98571c6aad617576b",
+      "ownership": "framework",
+      "source": "src/controller/authorization.mjs"
+    },
+    {
+      "path": "src/controller/index.mjs",
+      "digest": "sha256:e6e36fd3cd2f341e400d578a0e40bbb606e1444270f57d8e3cc89ec9695f6dc5",
+      "ownership": "framework",
+      "source": "src/controller/index.mjs"
+    },
+    {
+      "path": "src/controller/instructions.mjs",
+      "digest": "sha256:53c27cddfc7e989a21174fb7991d4ba3c3e5371983903a9a122b13ec0da0fc3a",
+      "ownership": "framework",
+      "source": "src/controller/instructions.mjs"
+    },
+    {
+      "path": "src/controller/run-controller.mjs",
+      "digest": "sha256:397e4aa8d6434224764e4ae94a639b36d0ddbb4db61f3e4a39f7bad918650c50",
+      "ownership": "framework",
+      "source": "src/controller/run-controller.mjs"
+    },
+    {
+      "path": "src/core/asset-policy.mjs",
+      "digest": "sha256:0689a3b862f3819870f7fae82ab35bace5ccd1ecff166d6a5b50429c1d55f4e7",
+      "ownership": "framework",
+      "source": "src/core/asset-policy.mjs"
+    },
+    {
+      "path": "src/core/canonical.mjs",
+      "digest": "sha256:02a0c2f21462f17096ff251bda967f0616f0372b5a41de6358ac217b5cd68b9c",
+      "ownership": "framework",
+      "source": "src/core/canonical.mjs"
+    },
+    {
+      "path": "src/core/cycle.mjs",
+      "digest": "sha256:da3585d6c500cd6eaec70048d126f51ff279d7f6c68cf655880e675595a23c77",
+      "ownership": "framework",
+      "source": "src/core/cycle.mjs"
+    },
+    {
+      "path": "src/core/evidence.mjs",
+      "digest": "sha256:2c96a75b0b7d15e9a77b2a1acf098ce346c3806fa780518f351f8850b202fb4b",
+      "ownership": "framework",
+      "source": "src/core/evidence.mjs"
+    },
+    {
+      "path": "src/core/finding.mjs",
+      "digest": "sha256:9d7b0ccfab3eab69a893ace40514b12b167b63a2d50ac6fdbae9b8fbab48f283",
+      "ownership": "framework",
+      "source": "src/core/finding.mjs"
+    },
+    {
+      "path": "src/core/index.mjs",
+      "digest": "sha256:d496fc479e7f1a02acf415748ab4aea1e4a31ff7b8467938319f5058123f53bc",
+      "ownership": "framework",
+      "source": "src/core/index.mjs"
+    },
+    {
+      "path": "src/core/path-policy.mjs",
+      "digest": "sha256:d79572402bfd9cbe02cb7b41cf34bc7378d6eb185cc7073617228c3112acc464",
+      "ownership": "framework",
+      "source": "src/core/path-policy.mjs"
+    },
+    {
+      "path": "src/core/schema-validator.mjs",
+      "digest": "sha256:39833635db003d99c514187e789c1752561bf87c98a32b58d89c204e13910189",
+      "ownership": "framework",
+      "source": "src/core/schema-validator.mjs"
+    },
+    {
+      "path": "src/metrics/derive.mjs",
+      "digest": "sha256:f2510c8311f62ee684c67a9d201eeec682be52a9c738007f64cf010dd2ef55e0",
+      "ownership": "framework",
+      "source": "src/metrics/derive.mjs"
+    },
+    {
+      "path": "src/metrics/index.mjs",
+      "digest": "sha256:2473b105cbf0152b0382ed2c3d13d7cd02dc7960677019c2f7e8083ef43638ec",
+      "ownership": "framework",
+      "source": "src/metrics/index.mjs"
+    },
+    {
+      "path": "src/spec/index.mjs",
+      "digest": "sha256:a0bbd57a4e5e8fa01951402a3e3a4260e3427574b89cbd8da354b7659da00f7f",
+      "ownership": "framework",
+      "source": "src/spec/index.mjs"
+    },
+    {
+      "path": "src/spec/structured-markdown.mjs",
+      "digest": "sha256:0308db66e5702bb151c686c0eccbc0dd22a53c1050f910129dddfca37a0789bd",
+      "ownership": "framework",
+      "source": "src/spec/structured-markdown.mjs"
+    },
+    {
+      "path": "src/task/context-manifest.mjs",
+      "digest": "sha256:aee7e79e4411325dad9da30f406e9cbb8ba8b8d57678227e1e3c4f075b57fe84",
+      "ownership": "framework",
+      "source": "src/task/context-manifest.mjs"
+    },
+    {
+      "path": "src/task/context-renderer.mjs",
+      "digest": "sha256:c6ced29a1b0932b99583abb6d222f831e842f3753b9e6639cbefb32688004710",
+      "ownership": "framework",
+      "source": "src/task/context-renderer.mjs"
+    },
+    {
+      "path": "src/task/errors.mjs",
+      "digest": "sha256:3cc16bd7f0d7e5ec3b068842427138aac909b109259e76c9bf956b0af7886dc5",
+      "ownership": "framework",
+      "source": "src/task/errors.mjs"
+    },
+    {
+      "path": "src/task/impact-analysis.mjs",
+      "digest": "sha256:9d214f47978325ed4ff1182f27fb10296db81305fbc08812be19423466556d3a",
+      "ownership": "framework",
+      "source": "src/task/impact-analysis.mjs"
+    },
+    {
+      "path": "src/task/index.mjs",
+      "digest": "sha256:382bd4dd327f6d8e90438ce6d87d4aa7b8d812bde13814fa9ac5d53035eb9f63",
+      "ownership": "framework",
+      "source": "src/task/index.mjs"
+    },
+    {
+      "path": "src/task/task-compiler.mjs",
+      "digest": "sha256:5b6a7edd96889d316afda47e34a9b7f48a99aab61d171436f2aa044b8fcd2fec",
+      "ownership": "framework",
+      "source": "src/task/task-compiler.mjs"
+    },
+    {
+      "path": "src/verify/cache.mjs",
+      "digest": "sha256:3472d7884fb4a7c69555c3900519e70c46cf6882f147a8855c0b56a97c7f4303",
+      "ownership": "framework",
+      "source": "src/verify/cache.mjs"
+    },
+    {
+      "path": "src/verify/executor.mjs",
+      "digest": "sha256:76b5f7b21d1f799d8d7cb8146b80077afe7a8608f4fe0c3b5afc2c145be80a21",
+      "ownership": "framework",
+      "source": "src/verify/executor.mjs"
+    },
+    {
+      "path": "src/verify/git-scope.mjs",
+      "digest": "sha256:83fd87f655c10a6fbd2937860761259bb2657cbf38267ac3d231950d9bf41136",
+      "ownership": "framework",
+      "source": "src/verify/git-scope.mjs"
+    },
+    {
+      "path": "src/verify/index.mjs",
+      "digest": "sha256:eb72f101d473358df35ccca49077264b10d6e467e8ffffe3340fab01cee9b0e4",
+      "ownership": "framework",
+      "source": "src/verify/index.mjs"
+    },
+    {
+      "path": "src/verify/process-runner.mjs",
+      "digest": "sha256:450fe0a58ca0ed1c2500e8d6bb65f88359d6747786c9a8453c14267143556f7c",
+      "ownership": "framework",
+      "source": "src/verify/process-runner.mjs"
+    },
+    {
+      "path": "src/verify/registry.mjs",
+      "digest": "sha256:87513ed286a853a0110ff05b4d0649b25f670c4b63eb61ceb9e0e4f488ac77a1",
+      "ownership": "framework",
+      "source": "src/verify/registry.mjs"
+    },
+    {
+      "path": "src/verify/safe-path.mjs",
+      "digest": "sha256:0ba07bdab6f98bb33ed61dc9ee72490e6c3c4953cb197382b98203069a775424",
+      "ownership": "framework",
+      "source": "src/verify/safe-path.mjs"
+    },
+    {
+      "path": "src/workflow/adjudicator.mjs",
+      "digest": "sha256:e1a58553be6114dd75592bba48430eaf993bd067053fb08a4e62fcf1fd363d85",
+      "ownership": "framework",
+      "source": "src/workflow/adjudicator.mjs"
+    },
+    {
+      "path": "src/workflow/errors.mjs",
+      "digest": "sha256:b7d6821a67652e9bdc03989d88ffb89ce988b747d8cf831d40feafdd15ab508d",
+      "ownership": "framework",
+      "source": "src/workflow/errors.mjs"
+    },
+    {
+      "path": "src/workflow/evidence-seal.mjs",
+      "digest": "sha256:0361014d41d86f49379785512c7012aefbdd2cad6ea259c5b16a9a9d28f15c42",
+      "ownership": "framework",
+      "source": "src/workflow/evidence-seal.mjs"
+    },
+    {
+      "path": "src/workflow/gates.mjs",
+      "digest": "sha256:641a32adc4bc15d3fe051af878a33a7bdfda62f0390cb91c26eee9b5b1dc7230",
+      "ownership": "framework",
+      "source": "src/workflow/gates.mjs"
+    },
+    {
+      "path": "src/workflow/index.mjs",
+      "digest": "sha256:c0e640eda172b7042db20edb584b2c6b099df67cfc8514a8805159d5dc4b76ba",
+      "ownership": "framework",
+      "source": "src/workflow/index.mjs"
+    },
+    {
+      "path": "src/workflow/review-coverage.mjs",
+      "digest": "sha256:77b5994f4891ecec9267c0a81d620553afbe4e52f9e5c200b3444d39f877f507",
+      "ownership": "framework",
+      "source": "src/workflow/review-coverage.mjs"
+    },
+    {
+      "path": "src/workflow/state-machine.mjs",
+      "digest": "sha256:01cdb4a51ada94d3f363f36058e659498be446f0764630c0b3af0692d5cb3e12",
+      "ownership": "framework",
+      "source": "src/workflow/state-machine.mjs"
+    },
+    {
+      "path": "src/workflow/verification-bindings.mjs",
+      "digest": "sha256:c757f9a1a28b30ba5fefc394536977a8bd6c6e2f42f8fdd67a965a44e5c25b8a",
+      "ownership": "framework",
+      "source": "src/workflow/verification-bindings.mjs"
+    },
+    {
+      "path": "starter/demo/minimal/ai-dev/baseline.json.tpl",
+      "digest": "sha256:afad585bbf757d6733c79444b2a40b0e7e92fc42f5bd7377dba39867994f6721",
+      "ownership": "framework",
+      "source": "starter/demo/minimal/ai-dev/baseline.json.tpl"
+    },
+    {
+      "path": "starter/demo/minimal/ai-dev/decisions/register.json",
+      "digest": "sha256:1a49a19e08b62b3197bff6c905a74decc8e18bf1ba1aaf301d51636dc28750f5",
+      "ownership": "framework",
+      "source": "starter/demo/minimal/ai-dev/decisions/register.json"
+    },
+    {
+      "path": "starter/demo/minimal/ai-dev/impact-map.json",
+      "digest": "sha256:0997d8045da1b6825b197dba02bdf7bf583c32f3b8a8cdb0baf53466d6445761",
+      "ownership": "framework",
+      "source": "starter/demo/minimal/ai-dev/impact-map.json"
+    },
+    {
+      "path": "starter/demo/minimal/ai-dev/verifiers/registry.json",
+      "digest": "sha256:34018ad1365aa6e7ca0a660cc07bc72410b280156d00824961386f8be622dd4c",
+      "ownership": "framework",
+      "source": "starter/demo/minimal/ai-dev/verifiers/registry.json"
+    },
+    {
+      "path": "starter/demo/minimal/demo-task.json",
+      "digest": "sha256:a199ff4aa46a10ebab82b63d4f20c7c6639881f282f2bda8e0b337e7bd4e2d59",
+      "ownership": "framework",
+      "source": "starter/demo/minimal/demo-task.json"
+    },
+    {
+      "path": "starter/demo/minimal/docs/product-spec.md",
+      "digest": "sha256:9e9f64a673a9ab12b39b914d7d281376e60d32cfa407fe542225c8c9cbd4f837",
+      "ownership": "framework",
+      "source": "starter/demo/minimal/docs/product-spec.md"
+    },
+    {
+      "path": "starter/demo/minimal/README.md.tpl",
+      "digest": "sha256:27c0ae3484705e54e8466064a794c3757b92ec1b3dbbf259826e9071311e89cc",
+      "ownership": "framework",
+      "source": "starter/demo/minimal/README.md.tpl"
+    },
+    {
+      "path": "starter/demo/minimal/src/normalize.mjs",
+      "digest": "sha256:4a1a6b4089c8bb483ffbc8024447032fee7548f20e2a3cbc25f13c2f89511e25",
+      "ownership": "framework",
+      "source": "starter/demo/minimal/src/normalize.mjs"
+    },
+    {
+      "path": "starter/demo/minimal/tests/normalize.test.mjs",
+      "digest": "sha256:c76e79990632aa21b4cc6a035e7bde15859289ee4128755c442fcaf1ab16dfa3",
+      "ownership": "framework",
+      "source": "starter/demo/minimal/tests/normalize.test.mjs"
+    },
+    {
+      "path": "starter/manifest.json",
+      "digest": "sha256:b3f35e38e3517bab81140f06d2241d7a25cab1c1cb71f7b2ace5af82da1c1160",
+      "ownership": "framework",
+      "source": "starter/manifest.json"
+    },
+    {
+      "path": "starter/project/.editorconfig",
+      "digest": "sha256:86baef7597da1ef68e03d4c4c24cac9ad8de890c34bb2694e5c9ee27cfe14ec4",
+      "ownership": "framework",
+      "source": "starter/project/.editorconfig"
+    },
+    {
+      "path": "starter/project/.gitattributes",
+      "digest": "sha256:7e0f6b272124b9b402b057fedad40ac701707159738a1c3eddb427d823289a63",
+      "ownership": "framework",
+      "source": "starter/project/.gitattributes"
+    },
+    {
+      "path": "starter/project/.gitignore.tpl",
+      "digest": "sha256:ae68612bee9d861561a3b0b8717ea13b262d3b97eb6aa07cc9ea7ef9df863d08",
+      "ownership": "framework",
+      "source": "starter/project/.gitignore.tpl"
+    },
+    {
+      "path": "starter/project/AGENTS.md.tpl",
+        "digest": "sha256:8a0ce359f9afb863bf663306d05b3ace9219728e6a6f7f659a1a527dc894c473",
+      "ownership": "framework",
+      "source": "starter/project/AGENTS.md.tpl"
+    },
+    {
+      "path": "starter/project/ai-dev/baseline.json.tpl",
+      "digest": "sha256:9ee2d621f7d79d95cc931d2e7152d7ab321b2f7926b56aef4f71e94bf933a226",
+      "ownership": "framework",
+      "source": "starter/project/ai-dev/baseline.json.tpl"
+    },
+    {
+      "path": "starter/project/ai-dev/decisions/register.json.tpl",
+      "digest": "sha256:2997fa14278bb6b7cc106b3088a6c348a410c700c19d1178b5f5ca7749a8f9c4",
+      "ownership": "framework",
+      "source": "starter/project/ai-dev/decisions/register.json.tpl"
+    },
+    {
+      "path": "starter/project/ai-dev/impact-map.json.tpl",
+      "digest": "sha256:dd77632e87d9eea44ddd0d3c29c99cf0082411575fa401729f87adb735510985",
+      "ownership": "framework",
+      "source": "starter/project/ai-dev/impact-map.json.tpl"
+    },
+    {
+      "path": "starter/project/ai-dev/verifiers/registry.json.tpl",
+      "digest": "sha256:092799291b226e058bb93f42bb60e51ecfcf0a457e1eab0a0751b531f7341288",
+      "ownership": "framework",
+      "source": "starter/project/ai-dev/verifiers/registry.json.tpl"
+    },
+    {
+      "path": "starter/project/ai-flow.config.json.tpl",
+      "digest": "sha256:bc8937254aa2a826d37d64cc031c298ee3b13c53eb3188ec409dc789bdca5b96",
+      "ownership": "framework",
+      "source": "starter/project/ai-flow.config.json.tpl"
+    },
+    {
+      "path": "starter/project/docs/product-spec.md.tpl",
+      "digest": "sha256:f997e8fa3369a03ede8ab50b4be59ae2ececfb453bff1333c5d3e7695b8569d7",
+      "ownership": "framework",
+      "source": "starter/project/docs/product-spec.md.tpl"
+    },
+    {
+      "path": "starter/project/package.json.tpl",
+      "digest": "sha256:e38d5053a82a1e5d17c375aacadfa8077578cb80e7310b8d3ac1d93742fa1916",
+      "ownership": "framework",
+      "source": "starter/project/package.json.tpl"
+    },
+    {
+      "path": "starter/project/README.md.tpl",
+      "digest": "sha256:f10c52452b3e0c8cb078494bcb92564cfafc4fb8159099f1084e04b79dfcc4a2",
+      "ownership": "framework",
+      "source": "starter/project/README.md.tpl"
+    }
+  ]
+}

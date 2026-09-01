@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "registryId": "MINIMAL-VERIFIERS",
+  "verifiers": [
+    {
+      "verifierId": "VER-NORMALIZE-CONTRACT",
+      "title": "Normalization contract cases",
+      "tier": "quick",
+      "command": "node",
+      "args": [
+        "--test",
+        "examples/minimal/tests/normalize.test.mjs"
+      ],
+      "workingDirectory": ".",
+      "timeoutMs": 10000,
+      "evidenceLevel": "contract",
+      "deterministic": true,
+      "inputPatterns": [
+        "examples/minimal/contracts/**",
+        "examples/minimal/src/**",
+        "examples/minimal/tests/**"
+      ],
+      "triggers": {
+        "requirementIds": [
+          "REQ-TYPE-001"
+        ],
+        "acceptanceIds": [
+          "AT-TYPE-001"
+        ],
+        "pathPatterns": [],
+        "riskDomains": [],
+        "alwaysRun": true
+      },
+      "sideEffect": {
+        "kind": "none",
+        "requiresApproval": false
+      }
+    },
+    {
+      "verifierId": "VER-NORMALIZE-RUNTIME",
+      "title": "Normalization runtime behavior",
+      "tier": "quick",
+      "command": "node",
+      "args": [
+        "--test",
+        "examples/minimal/tests/normalize.test.mjs"
+      ],
+      "workingDirectory": ".",
+      "timeoutMs": 10000,
+      "evidenceLevel": "runtime_stub",
+      "deterministic": true,
+      "inputPatterns": [
+        "examples/minimal/contracts/**",
+        "examples/minimal/src/**",
+        "examples/minimal/tests/**"
+      ],
+      "triggers": {
+        "requirementIds": [
+          "REQ-NORM-001"
+        ],
+        "acceptanceIds": [
+          "AT-NORM-001"
+        ],
+        "pathPatterns": [
+          "examples/minimal/src/**"
+        ],
+        "riskDomains": [],
+        "alwaysRun": false
+      },
+      "sideEffect": {
+        "kind": "none",
+        "requiresApproval": false
+      }
+    }
+  ],
+  "globalInvariantVerifierIds": [
+    "VER-NORMALIZE-CONTRACT"
+  ]
+}

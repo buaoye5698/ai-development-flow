@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "mapId": "FRAMEWORK-IMPACT",
+  "baselineId": "framework-current-20260830",
+  "rules": [
+    {
+      "ruleId": "FRAMEWORK-QUICK-START",
+      "pathPatterns": [
+        "AGENTS.md",
+        "src/cli/main.mjs",
+        "src/cli/start-command.mjs",
+        "src/cli/task-routing.mjs",
+        "starter/project/AGENTS.md.tpl",
+        "tests/cli-end-to-end.test.mjs",
+        "tests/task-routing.test.mjs"
+      ],
+      "requirementIds": ["FRM-016"],
+      "acceptanceIds": ["AC-FRM-016"],
+      "verifierIds": [
+        "VERIFY-FRAMEWORK-CONTRACT",
+        "VERIFY-FRAMEWORK-TARGET"
+      ]
+    },
+    {
+      "ruleId": "FRAMEWORK-CONTROL-CODE",
+      "pathPatterns": [
+        "AGENTS.md",
+        "ai-flow.config.json",
+        "ai-dev/**",
+        "bin/**",
+        "package.json",
+        "schemas/**",
+        "src/**",
+        "starter/**",
+        "tools/**"
+      ],
+      "requirementIds": ["FRM-018"],
+      "acceptanceIds": ["AC-FRM-018"],
+      "verifierIds": [
+        "VERIFY-FRAMEWORK-CONTRACT",
+        "VERIFY-FRAMEWORK-RUNTIME",
+        "VERIFY-FRAMEWORK-TARGET"
+      ]
+    },
+    {
+      "ruleId": "FRAMEWORK-DOCUMENTATION",
+      "pathPatterns": [
+        "CHANGELOG.md",
+        "README.md",
+        "docs/**"
+      ],
+      "requirementIds": ["FRM-018"],
+      "acceptanceIds": ["AC-FRM-018"],
+      "verifierIds": [
+        "VERIFY-FRAMEWORK-CONTRACT"
+      ]
+    },
+    {
+      "ruleId": "FRAMEWORK-TESTS",
+      "pathPatterns": [
+        "examples/**",
+        "tests/**"
+      ],
+      "requirementIds": ["FRM-018"],
+      "acceptanceIds": ["AC-FRM-018"],
+      "verifierIds": [
+        "VERIFY-FRAMEWORK-CONTRACT",
+        "VERIFY-FRAMEWORK-RUNTIME",
+        "VERIFY-FRAMEWORK-TARGET"
+      ]
+    }
+  ],
+  "globalRequirementIds": [],
+  "globalVerifierIds": []
+}

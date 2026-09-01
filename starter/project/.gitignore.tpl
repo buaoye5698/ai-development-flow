@@ -1,0 +1,9 @@
+.ai-flow/cache/
+.ai-flow/controller/
+.ai-flow/generated/
+.env
+.env.local
+credentials/
+secrets/
+node_modules/
+*.log

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai-development-flow:execution-authorization:v1",
+  "title": "One-time execution authorization",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "authorizationId", "runId", "taskId", "taskPacketDigest", "baseRevision", "controlDigest", "allowedPaths", "allowedExternalEffects", "issuedAt", "expiresAt", "nonce", "issuedBy", "authorizationDigest"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "authorizationId": { "$ref": "#/$defs/id" },
+    "runId": { "$ref": "#/$defs/id" },
+    "taskId": { "$ref": "#/$defs/id" },
+    "taskPacketDigest": { "$ref": "#/$defs/digest" },
+    "baseRevision": { "type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$" },
+    "controlDigest": { "$ref": "#/$defs/digest" },
+    "allowedPaths": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/scopePattern" } },
+    "allowedExternalEffects": { "type": "array", "uniqueItems": true, "items": { "enum": ["network_write", "external_service_write", "physical", "production"] } },
+    "issuedAt": { "$ref": "#/$defs/dateTime" },
+    "expiresAt": { "$ref": "#/$defs/dateTime" },
+    "nonce": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{16,256}$" },
+    "issuedBy": { "type": "string", "minLength": 1 },
+    "authorizationDigest": { "$ref": "#/$defs/digest" }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{1,127}$" },
+    "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,9})?Z$" },
+    "scopePattern": { "type": "string", "minLength": 1, "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^*?\\[\\]{}\\u0000]+(?:/\\*\\*)?$" }
+  }
+}

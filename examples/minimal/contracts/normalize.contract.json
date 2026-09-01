@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "contractId": "CONTRACT-NORM-001",
+  "operation": "normalizeLabel",
+  "requirementIds": [
+    "REQ-NORM-001",
+    "REQ-TYPE-001"
+  ],
+  "acceptanceIds": [
+    "AT-NORM-001",
+    "AT-TYPE-001"
+  ],
+  "cases": [
+    {
+      "caseId": "CASE-NFKC-001",
+      "input": "  Ａ\tB  ",
+      "expected": "A B"
+    },
+    {
+      "caseId": "CASE-CASE-001",
+      "input": "  Keep   Case  ",
+      "expected": "Keep Case"
+    },
+    {
+      "caseId": "CASE-EMPTY-001",
+      "input": "   ",
+      "expected": ""
+    }
+  ],
+  "invalidInputs": [
+    null,
+    42,
+    false,
+    []
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "contractId": "CONTRACT-DOC-001",
+  "requirementIds": [
+    "REQ-DOC-001"
+  ],
+  "acceptanceIds": [
+    "AT-DOC-001"
+  ],
+  "expectedOperationName": "normalizeLabel"
+}

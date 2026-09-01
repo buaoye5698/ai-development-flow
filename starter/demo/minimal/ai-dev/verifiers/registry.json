@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "registryId": "DEMO-MINIMAL-VERIFIERS",
+  "verifiers": [
+    {
+      "verifierId": "VERIFY-DEMO-CONTRACT",
+      "title": "Minimal normalization contract",
+      "tier": "quick",
+      "command": "node",
+      "args": [
+        "--test",
+        "tests/normalize.test.mjs"
+      ],
+      "workingDirectory": ".",
+      "timeoutMs": 10000,
+      "evidenceLevel": "contract",
+      "deterministic": true,
+      "inputPatterns": [
+        "src/**",
+        "tests/**"
+      ],
+      "environmentKeys": [],
+      "triggers": {
+        "requirementIds": [
+          "REQ-NORM-001",
+          "REQ-TYPE-001"
+        ],
+        "acceptanceIds": [
+          "AT-NORM-001",
+          "AT-TYPE-001"
+        ],
+        "pathPatterns": [
+          "src/**",
+          "tests/**"
+        ],
+        "riskDomains": [],
+        "alwaysRun": false
+      },
+      "sideEffect": {
+        "kind": "none",
+        "requiresApproval": false
+      }
+    }
+  ],
+  "globalInvariantVerifierIds": []
+}

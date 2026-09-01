@@ -1,0 +1,490 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai-development-flow:run-record:v2",
+  "title": "Provider-neutral AI development run record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "frameworkVersion",
+    "runId",
+    "taskId",
+    "baselineId",
+    "specDigest",
+    "subjectRevision",
+    "state",
+    "startedAt",
+    "updatedAt",
+    "implementerContextId",
+    "reviewerContextIds",
+    "contextManifestRef",
+    "verificationResultRefs",
+    "reviewReportRefs",
+    "repairHistory",
+    "stateTransitions",
+    "humanInterventions",
+    "result",
+    "expectedTaskDigest",
+    "taskPacketDigest",
+    "baseRevision",
+    "controlDigest",
+    "subjectContentDigest",
+    "worktreeDigest",
+    "verificationResultDigests",
+    "capabilities",
+    "observations",
+    "checkpoints",
+    "authorizationConsumptions",
+    "workspace",
+    "taskPacketRef",
+    "worktreeIdentityDigest",
+    "briefRefs"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "runId": {
+      "$ref": "#/$defs/id"
+    },
+    "taskId": {
+      "$ref": "#/$defs/id"
+    },
+    "baselineId": {
+      "$ref": "#/$defs/id"
+    },
+    "specDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "subjectRevision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "state": {
+      "enum": [
+        "draft",
+        "blocked",
+        "ready",
+        "implementing",
+        "verifying",
+        "reviewing",
+        "repairing",
+        "accepted",
+        "escalated"
+      ]
+    },
+    "startedAt": {
+      "$ref": "#/$defs/dateTime"
+    },
+    "updatedAt": {
+      "$ref": "#/$defs/dateTime"
+    },
+    "implementerContextId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "reviewerContextIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "contextManifestRef": {
+      "$ref": "#/$defs/repoPath"
+    },
+    "verificationResultRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/repoPath"
+      }
+    },
+    "reviewReportRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/repoPath"
+      }
+    },
+    "repairHistory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "round",
+          "findingFingerprints",
+          "subjectRevision",
+          "status"
+        ],
+        "properties": {
+          "round": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "findingFingerprints": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/$defs/digest"
+            }
+          },
+          "subjectRevision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": [
+              "started",
+              "completed",
+              "failed",
+              "blocked"
+            ]
+          }
+        }
+      }
+    },
+    "workspace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "identifier"
+      ],
+      "properties": {
+        "kind": {
+          "const": "worktree"
+        },
+        "identifier": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "taskPacketRef": {
+      "$ref": "#/$defs/repoPath"
+    },
+    "worktreeIdentityDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "briefRefs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agent", "human"],
+      "properties": {
+        "agent": { "$ref": "#/$defs/repoPath" },
+        "human": { "$ref": "#/$defs/repoPath" }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "durationMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "verificationDurationMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "repairRounds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cacheHits": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cacheMisses": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "humanInterventionCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision",
+        "evidenceBundleRef",
+        "summary"
+      ],
+      "properties": {
+        "decision": {
+          "enum": [
+            "in_progress",
+            "pass",
+            "repair",
+            "blocked",
+            "accepted_with_exclusions"
+          ]
+        },
+        "evidenceBundleRef": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "acceptedEvidenceLevel": {
+          "$ref": "#/$defs/evidenceLevel"
+        }
+      }
+    },
+    "frameworkVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[A-Za-z0-9.-]+)?$"
+    },
+    "stateTransitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to",
+          "at",
+          "reason",
+          "actorRole"
+        ],
+        "properties": {
+          "from": {
+            "$ref": "#/$defs/state"
+          },
+          "to": {
+            "$ref": "#/$defs/state"
+          },
+          "at": {
+            "$ref": "#/$defs/dateTime"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorRole": {
+            "enum": [
+              "controller",
+              "implementer",
+              "reviewer",
+              "repairer",
+              "human"
+            ]
+          }
+        }
+      }
+    },
+    "humanInterventions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "interventionId",
+          "gate",
+          "status",
+          "at",
+          "summary"
+        ],
+        "properties": {
+          "interventionId": {
+            "$ref": "#/$defs/id"
+          },
+          "gate": {
+            "enum": [
+              "unresolved_decision",
+              "truth_source_conflict",
+              "scope_expansion",
+              "judge_modification",
+              "external_side_effect",
+              "other"
+            ]
+          },
+          "status": {
+            "enum": [
+              "requested",
+              "approved",
+              "rejected",
+              "resolved"
+            ]
+          },
+          "at": {
+            "$ref": "#/$defs/dateTime"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actorRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidenceRef": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "expectedTaskDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "taskPacketDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "baseRevision": {
+      "$ref": "#/$defs/gitCommit"
+    },
+    "controlDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "subjectContentDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "worktreeDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "verificationResultDigests": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "resultId",
+          "resultDigest"
+        ],
+        "properties": {
+          "resultId": {
+            "$ref": "#/$defs/id"
+          },
+          "resultDigest": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["admitted", "resolved", "used"],
+      "properties": {
+        "admitted": { "$ref": "#/$defs/idList" },
+        "resolved": { "$ref": "#/$defs/idList" },
+        "used": { "$ref": "#/$defs/idList" }
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["observationId", "kind", "summary", "paths", "recordedAt"],
+        "properties": {
+          "observationId": { "$ref": "#/$defs/id" },
+          "kind": { "enum": ["out_of_scope_defect", "truth_conflict", "missing_interface", "blocker"] },
+          "summary": { "type": "string", "minLength": 1 },
+          "paths": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/repoPath" } },
+          "recordedAt": { "$ref": "#/$defs/dateTime" }
+        }
+      }
+    },
+    "checkpoints": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["checkpointId", "phase", "at", "taskPacketDigest", "controlDigest", "subjectContentDigest", "worktreeIdentityDigest"],
+        "properties": {
+          "checkpointId": { "$ref": "#/$defs/id" },
+          "phase": { "enum": ["prepared", "implementing", "verifying", "reviewing", "repairing", "sealed", "abandoned"] },
+          "at": { "$ref": "#/$defs/dateTime" },
+          "taskPacketDigest": { "$ref": "#/$defs/digest" },
+          "controlDigest": { "$ref": "#/$defs/digest" },
+          "subjectContentDigest": { "$ref": "#/$defs/digest" },
+          "worktreeIdentityDigest": { "$ref": "#/$defs/digest" }
+        }
+      }
+    },
+    "authorizationConsumptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["authorizationRef", "authorizationDigest", "nonce", "consumedAt", "paths", "externalEffects"],
+        "properties": {
+          "authorizationRef": { "$ref": "#/$defs/repoPath" },
+          "authorizationDigest": { "$ref": "#/$defs/digest" },
+          "nonce": { "type": "string", "minLength": 16 },
+          "consumedAt": { "$ref": "#/$defs/dateTime" },
+          "paths": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/repoPath" } },
+          "externalEffects": { "type": "array", "uniqueItems": true, "items": { "enum": ["network_write", "external_service_write", "physical", "production"] } }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{1,127}$"
+    },
+    "idList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/id" }
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"
+    },
+    "dateTime": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,9})?(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "repoPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^\\u0000]+$"
+    },
+    "state": {
+      "enum": [
+        "draft",
+        "blocked",
+        "ready",
+        "implementing",
+        "verifying",
+        "reviewing",
+        "repairing",
+        "accepted",
+        "escalated"
+      ]
+    },
+    "evidenceLevel": {
+      "enum": [
+        "specification",
+        "contract",
+        "runtime_stub",
+        "target_integration",
+        "owner",
+        "production"
+      ]
+    }
+  }
+}

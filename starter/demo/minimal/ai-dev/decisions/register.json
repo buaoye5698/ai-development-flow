@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "registerId": "DEMO-MINIMAL-DECISIONS",
+  "baselineId": "DEMO-MINIMAL-BASELINE-001",
+  "status": "resolved",
+  "decisions": [],
+  "stageGates": [
+    {
+      "stageId": "DEMO-IMPLEMENTATION",
+      "title": "Minimal demo implementation",
+      "status": "authorized",
+      "blockingDecisionIds": [],
+      "evidenceRequired": [
+        "deterministic contract verification",
+        "independent review"
+      ],
+      "authorizationBoundary": "Local changes to the demo implementation and its tests only."
+    }
+  ]
+}

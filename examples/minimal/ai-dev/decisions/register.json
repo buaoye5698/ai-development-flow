@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "registerId": "MINIMAL-DECISIONS",
+  "baselineId": "BASELINE-MINIMAL-001",
+  "status": "pending",
+  "decisions": [
+    {
+      "decisionId": "DEC-CASE-001",
+      "question": "Should a future baseline add optional case folding?",
+      "status": "unresolved",
+      "owner": "Product owner",
+      "options": [
+        {
+          "optionId": "OPT-PRESERVE",
+          "description": "Keep case preservation as the only behavior."
+        },
+        {
+          "optionId": "OPT-FOLD",
+          "description": "Add an explicit, locale-defined case-folding option in a new baseline."
+        }
+      ],
+      "dependencies": [],
+      "blockedStageIds": [
+        "STAGE-CASE-FOLDING"
+      ],
+      "relatedRequirementIds": [
+        "REQ-NORM-001"
+      ],
+      "relatedAcceptanceIds": [
+        "AT-NORM-001"
+      ],
+      "resolutionEvidence": []
+    }
+  ],
+  "stageGates": [
+    {
+      "stageId": "STAGE-CASE-FOLDING",
+      "title": "Optional case-folding design",
+      "status": "blocked",
+      "blockingDecisionIds": [
+        "DEC-CASE-001"
+      ],
+      "evidenceRequired": [
+        "Owner decision"
+      ],
+      "authorizationBoundary": "Only decision-evidence collection is allowed before case-folding authorization."
+    }
+  ]
+}

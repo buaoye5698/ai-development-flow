@@ -1,0 +1,633 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai-development-flow:evidence-bundle:v2",
+  "title": "Layered task evidence bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "frameworkVersion",
+    "bundleId",
+    "runId",
+    "taskId",
+    "baselineId",
+    "baselineDigest",
+    "baseRevision",
+    "taskKind",
+    "specDigest",
+    "taskPacketDigest",
+    "controlDigest",
+    "subjectContentDigest",
+    "subjectEntries",
+    "actualImpact",
+    "activation",
+    "subjectRevision",
+    "contextManifestDigest",
+    "createdAt",
+    "decision",
+    "declaredMaximumLevel",
+    "levels",
+    "verifierEvidence",
+    "reviewReportRefs",
+    "reviewEvidence",
+    "decisionEvidence",
+    "limitations",
+    "exclusions",
+    "bundleDigest",
+    "expectedTaskDigest",
+    "worktreeDigest",
+    "verificationResultDigests",
+    "authorityReceipts",
+    "authorityReceiptRefs"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "bundleId": {
+      "$ref": "#/$defs/id"
+    },
+    "runId": {
+      "$ref": "#/$defs/id"
+    },
+    "taskId": {
+      "$ref": "#/$defs/id"
+    },
+    "baselineId": {
+      "$ref": "#/$defs/id"
+    },
+    "specDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "controlDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "subjectContentDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "baseRevision": {
+      "$ref": "#/$defs/gitCommit"
+    },
+    "taskKind": {
+      "enum": ["implementation", "truth_proposal", "control_plane", "evidence_collection"]
+    },
+    "subjectEntries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "type", "mode", "contentDigest"],
+        "properties": {
+          "path": { "$ref": "#/$defs/repoPath" },
+          "type": { "enum": ["file", "symlink", "gitlink", "deleted"] },
+          "mode": { "type": "string", "pattern": "^[0-9]{6}$" },
+          "contentDigest": { "$ref": "#/$defs/digest" }
+        }
+      }
+    },
+    "actualImpact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["changedPaths", "matchedImpactRuleIds", "requirementIds", "acceptanceIds", "verifierIds"],
+      "properties": {
+        "changedPaths": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/repoPath" } },
+        "matchedImpactRuleIds": { "$ref": "#/$defs/idList" },
+        "requirementIds": { "$ref": "#/$defs/idList" },
+        "acceptanceIds": { "$ref": "#/$defs/idList" },
+        "verifierIds": { "$ref": "#/$defs/idList" }
+      }
+    },
+    "activation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "externalTargetRequired", "baseRevision", "subjectContentDigest"],
+      "properties": {
+        "status": { "const": "candidate" },
+        "externalTargetRequired": { "const": true },
+        "baseRevision": { "$ref": "#/$defs/gitCommit" },
+        "subjectContentDigest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "subjectRevision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contextManifestDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "createdAt": {
+      "$ref": "#/$defs/dateTime"
+    },
+    "decision": {
+      "enum": [
+        "pass",
+        "blocked",
+        "accepted_with_exclusions"
+      ]
+    },
+    "declaredMaximumLevel": {
+      "$ref": "#/$defs/evidenceLevel"
+    },
+    "levels": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "level",
+          "status",
+          "references"
+        ],
+        "properties": {
+          "level": {
+            "$ref": "#/$defs/evidenceLevel"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "fail",
+              "not_run",
+              "not_applicable",
+              "not_claimed",
+              "stale"
+            ]
+          },
+          "references": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "verifierEvidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "resultRef",
+          "verifierId",
+          "status",
+          "level",
+          "definitionDigest",
+          "inputDigest",
+          "outputDigest",
+          "resultId",
+          "resultDigest",
+          "complete",
+          "requiredTier",
+          "executedTier",
+          "completedAt"
+        ],
+        "properties": {
+          "resultRef": {
+            "$ref": "#/$defs/repoPath"
+          },
+          "verifierId": {
+            "$ref": "#/$defs/id"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "fail",
+              "error",
+              "timeout",
+              "skipped"
+            ]
+          },
+          "level": {
+            "$ref": "#/$defs/machineEvidenceLevel"
+          },
+          "definitionDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "inputDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "outputDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "resultId": {
+            "$ref": "#/$defs/id"
+          },
+          "resultDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "requiredTier": {
+            "enum": [
+              "quick",
+              "deep"
+            ]
+          },
+          "executedTier": {
+            "enum": [
+              "quick",
+              "deep"
+            ]
+          },
+          "completedAt": {
+            "$ref": "#/$defs/dateTime"
+          }
+        }
+      }
+    },
+    "reviewReportRefs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/repoPath"
+      }
+    },
+    "decisionEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "blockingDecisionIds",
+        "truthSourceConflictIds",
+        "sideEffects"
+      ],
+      "properties": {
+        "blockingDecisionIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "truthSourceConflictIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "sideEffects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "occurred",
+              "authorized"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "minLength": 1
+              },
+              "occurred": {
+                "type": "boolean"
+              },
+              "authorized": {
+                "type": "boolean"
+              },
+              "authorizationRef": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "exclusions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "bundleDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "frameworkVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[A-Za-z0-9.-]+)?$"
+    },
+    "baselineDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "taskPacketDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "reviewEvidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reportRef",
+          "reportDigest",
+          "reviewContextId",
+          "verdict",
+          "implementerContextId",
+          "contextDigest",
+          "reportId",
+          "createdAt"
+        ],
+        "properties": {
+          "reportRef": {
+            "$ref": "#/$defs/repoPath"
+          },
+          "reportDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "reviewContextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "verdict": {
+            "enum": [
+              "pass",
+              "fail",
+              "blocked"
+            ]
+          },
+          "implementerContextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contextDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "reportId": {
+            "$ref": "#/$defs/id"
+          },
+          "createdAt": {
+            "$ref": "#/$defs/dateTime"
+          }
+        }
+      }
+    },
+    "expectedTaskDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "worktreeDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "verificationResultDigests": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "resultId",
+          "resultDigest"
+        ],
+        "properties": {
+          "resultId": {
+            "$ref": "#/$defs/id"
+          },
+          "resultDigest": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    },
+    "authorityReceipts": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schemaVersion",
+          "receiptId",
+          "kind",
+          "actorType",
+          "actorRef",
+          "taskId",
+          "taskPacketDigest",
+          "expectedTaskDigest",
+          "specDigest",
+          "controlDigest",
+          "subjectContentDigest",
+          "baselineDigest",
+          "subjectRevision",
+          "worktreeDigest",
+          "verificationResultDigests",
+          "reviewReportDigests",
+          "issuedAt",
+          "reference",
+          "receiptDigest"
+        ],
+        "properties": {
+          "schemaVersion": { "const": 2 },
+          "receiptId": {
+            "$ref": "#/$defs/id"
+          },
+          "kind": {
+            "enum": [
+              "owner_acceptance",
+              "production_release"
+            ]
+          },
+          "actorType": {
+            "enum": [
+              "human",
+              "external_system"
+            ]
+          },
+          "actorRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "taskId": {
+            "$ref": "#/$defs/id"
+          },
+          "taskPacketDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "expectedTaskDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "specDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "controlDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "subjectContentDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "baselineDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "subjectRevision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "worktreeDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "verificationResultDigests": {
+            "$ref": "#/$defs/verificationBindings"
+          },
+          "reviewReportDigests": {
+            "$ref": "#/$defs/reviewBindings"
+          },
+          "issuedAt": {
+            "$ref": "#/$defs/dateTime"
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "priorOwnerReceiptDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "receiptDigest": {
+            "$ref": "#/$defs/digest"
+          }
+        },
+        "oneOf": [
+          {
+            "properties": {
+              "kind": {
+                "const": "owner_acceptance"
+              }
+            },
+            "not": {
+              "required": [
+                "priorOwnerReceiptDigest"
+              ]
+            }
+          },
+          {
+            "properties": {
+              "kind": {
+                "const": "production_release"
+              }
+            },
+            "required": [
+              "priorOwnerReceiptDigest"
+            ]
+          }
+        ]
+      }
+    },
+    "authorityReceiptRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/repoPath"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{1,127}$"
+    },
+    "idList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"
+    },
+    "dateTime": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,9})?(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "repoPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^\\u0000]+$"
+    },
+    "evidenceLevel": {
+      "enum": [
+        "specification",
+        "contract",
+        "runtime_stub",
+        "target_integration",
+        "owner",
+        "production"
+      ]
+    },
+    "machineEvidenceLevel": {
+      "enum": [
+        "specification",
+        "contract",
+        "runtime_stub",
+        "target_integration"
+      ]
+    },
+    "verificationBindings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "resultId",
+          "resultDigest"
+        ],
+        "properties": {
+          "resultId": {
+            "$ref": "#/$defs/id"
+          },
+          "resultDigest": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    },
+    "reviewBindings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reportId",
+          "reportDigest",
+          "implementerContextId",
+          "reviewContextId",
+          "contextDigest"
+        ],
+        "properties": {
+          "reportId": {
+            "$ref": "#/$defs/id"
+          },
+          "reportDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "implementerContextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reviewContextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contextDigest": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    }
+  }
+}

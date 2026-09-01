@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai-development-flow:project-config:v2",
+  "title": "AI development flow project configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "frameworkVersion", "projectId", "baselinePath", "specAdapter", "paths", "automationPolicy", "evidencePolicy"],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "frameworkVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[A-Za-z0-9.-]+)?$" },
+    "projectId": { "$ref": "#/$defs/id" },
+    "baselinePath": { "$ref": "#/$defs/repoPath" },
+    "specAdapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["module", "exportName"],
+      "properties": {
+        "module": { "$ref": "#/$defs/repoPath" },
+        "exportName": { "type": "string", "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$" },
+        "options": { "type": "object" }
+      }
+    },
+    "paths": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decisions", "tasks", "reviews", "runs", "evidence", "authorizations", "generated", "cache", "controller"],
+      "properties": {
+        "decisions": { "$ref": "#/$defs/repoPath" },
+        "tasks": { "$ref": "#/$defs/repoPath" },
+        "reviews": { "$ref": "#/$defs/repoPath" },
+        "runs": { "$ref": "#/$defs/repoPath" },
+        "evidence": { "$ref": "#/$defs/repoPath" },
+        "authorizations": { "$ref": "#/$defs/repoPath" },
+        "generated": { "$ref": "#/$defs/repoPath" },
+        "cache": { "$ref": "#/$defs/repoPath" },
+        "controller": { "$ref": "#/$defs/repoPath" }
+      }
+    },
+    "automationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxRepairRounds", "stopAfterSameFindingFingerprint", "freshReviewContextRequired", "implementerCannotReviewOwnTask", "repairWithinTaskAllowedPathsOnly", "maxParallelVerifiers", "controlPaths", "sensitivePaths", "reviewProfile", "stopConditions"],
+      "properties": {
+        "maxRepairRounds": { "type": "integer", "minimum": 0, "maximum": 10 },
+        "stopAfterSameFindingFingerprint": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "freshReviewContextRequired": { "const": true },
+        "implementerCannotReviewOwnTask": { "const": true },
+        "repairWithinTaskAllowedPathsOnly": { "const": true },
+        "maxParallelVerifiers": { "type": "integer", "minimum": 1, "maximum": 32 },
+        "controlPaths": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/scopePattern" } },
+        "sensitivePaths": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/scopePattern" } },
+        "reviewProfile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["profileId", "mandatoryLensIds"],
+          "properties": {
+            "profileId": { "$ref": "#/$defs/id" },
+            "mandatoryLensIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/id" } }
+          }
+        },
+        "stopConditions": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,63}$" } }
+      }
+    },
+    "evidencePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["levels", "preventElevation"],
+      "properties": {
+        "levels": { "const": ["specification", "contract", "runtime_stub", "target_integration", "owner", "production"] },
+        "preventElevation": { "const": true }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{1,127}$" },
+    "repoPath": { "type": "string", "minLength": 1, "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^\\u0000]+$" },
+    "scopePattern": { "type": "string", "minLength": 1, "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^*?\\[\\]{}\\u0000]+(?:/\\*\\*)?$" }
+  }
+}
