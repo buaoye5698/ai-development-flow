@@ -20,15 +20,15 @@ verifier registry 声明验证器 ID、输入模式、证据等级、超时和�
 
 ## 3. 执行宿主桥接
 
-宿主桥接把 controller envelope 交给 Codex、其他 Agent、IDE、队列或人工流程，并把结构化结果写回框架契约。桥接层不需要拦截每一次文件写入或工具调用，也不需要把 Codex SDK嵌入框架。
+宿主桥接把 quick `start` 或 full controller envelope 交给 Codex、其他 Agent、IDE、队列或人工流程，并把结构化结果写回对应契约。桥接层不需要拦截每一次文件写入或工具调用，也不需要把 Codex SDK 嵌入框架。
 
 桥接至少负责：
 
-- 把隔离 worktree、TaskPacket、ContextManifest 和 Agent Brief 交给执行者；
-- 为 reviewer 创建不同且可审计的上下文；
+- 把当前或隔离工作区、TaskPacket、ContextManifest 和 Agent Brief 交给执行者；
+- quick 完成后调用 task-bound verify，full 为 reviewer 创建不同且可审计的上下文；
 - 让 Agent 在 envelope 范围内使用宿主原生能力；
-- 把阶段结果、capabilities、observations、verification 和 review 交回 controller；
-- 在 Owner、production 或外部副作用前完成宿主侧身份与授权认证。
+- 把 full 阶段结果、capabilities、observations、verification 和 review 交回 controller；
+- 在 full 的 Owner、production 或外部副作用前完成宿主侧身份与授权认证。
 
 RunRecord 只记录 admitted→resolved→used 的能力进展，不记录原生工具调用流水。observations 只报告范围外缺陷、真相冲突、缺失接口和 blocker，不自动扩权。
 

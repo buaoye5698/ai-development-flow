@@ -4,7 +4,7 @@
 
 ## Active、Candidate 与控制来源
 
-完整 base commit 固定本次运行的 Active Truth 与 Active Control。隔离 worktree 中的任何修改都是 Candidate Change，包括对规格、AGENTS、Schema、impact map、verifier registry 和框架代码的修改。
+完整 base commit 固定任务的 Active Truth 与 Active Control。quick 只能在当前 Git 工作区修改 managed implementation；full 隔离 worktree 中的任何修改都是 Candidate Change，包括对规格、AGENTS、Schema、impact map、verifier registry 和框架代码的修改。
 
 当前运行的资产策略、任务语义、验证器定义、审查规则和证据门只从 base revision 加载。Candidate Control 可以被验证和审查，但不能裁判自身。EvidenceBundle 证明精确内容；外部提交或合并目标接受该内容后，修改才在新目标中成为 Active。
 
@@ -27,7 +27,7 @@
 | AuthorityReceipt | `authority-receipt.schema.json` | task/control/subject 与 Owner/production 外部权威 |
 | EvidenceBundle | `evidence-bundle.schema.json` | 完整证明链、最高证据等级与外部激活目标 |
 
-EvidenceBundle 继续承担变更证明主干；不另建 ChangeSet 产物。
+TaskPacket、ContextManifest 和 VerificationResult 同时服务 quick 与 full；ReviewReport、RunRecord、AuthorityReceipt 和 EvidenceBundle 只属于 full。EvidenceBundle 继续承担 full 变更证明主干；不另建 quick 状态机或 ChangeSet 产物。
 
 ## 资产分类与任务权限
 
@@ -55,7 +55,7 @@ TaskPacket 必须绑定：
 - 声明能力和风险副作用；
 - stage gate、decision dependencies 与 evidence targets。
 
-编译器从 TaskPacket 请求指定的同一 base revision 读取规格、配置、决策、impact map、verifier registry、Schema 和 AGENTS，并自动生成或复用 SpecIndex。它校验请求与派生结果完全一致，并把任务请求与所选验证器声明的副作用按 kind 合并。实际 diff 后若 scope、资产类、需求、验收、verifier 或 Active Control 超出 TaskPacket，当前任务立即 stale，必须重新编译；框架不自动扩权。
+编译器从 TaskPacket 请求指定的同一 base revision 读取规格、配置、决策、impact map、verifier registry、Schema 和 AGENTS，并自动生成或复用 SpecIndex。它校验请求与派生结果完全一致，并把任务请求与所选验证器声明的副作用按 kind 合并。quick task-bound verify 与 full controller 都根据实际 diff 重查 scope、资产类、需求、验收、verifier 和 Active Control；任何扩张都必须重新编译，框架不自动扩权。
 
 ## execution authorization
 
@@ -75,7 +75,11 @@ TaskPacket 必须绑定：
 
 不归一化换行，不包含 staging、commit 或分支状态。TaskPacket、ContextManifest、VerificationResult、ReviewReport、RunRecord、EvidenceBundle、authority receipt 和其他过程产物不进入 subject，避免证据自引用。
 
-## 控制器与恢复
+## quick 本地验证
+
+quick `start` 在当前 Git 工作区生成 TaskPacket、ContextManifest、Agent/Human Brief 和 task-bound verify 命令，不创建隔离 worktree 或 RunRecord。task-bound verify 从 TaskPacket 推导默认 tier，从 base revision 读取 Active Control，并在 verifier 执行前复核实际 scope、资产与 impact。通过结果只表示本地任务验证完成，不构成独立审查、EvidenceBundle、`accepted` 或外部激活证明。
+
+## full 控制器与恢复
 
 `prepare` 原子获取单写者锁，在全新绝对路径创建 detached isolated worktree，固定 task/base/control/worktree identity/content 并生成 RunRecord、ContextManifest 和 execution envelope。RunRecord 只能由 controller 的 `prepare` 创建并绑定该隔离 worktree；调用者构造的记录、当前 checkout、项目根目录或既有目录不能成为运行主体。
 
@@ -85,9 +89,9 @@ TaskPacket 必须绑定：
 
 RunRecord 的 capabilities 只记录 admitted→resolved→used，不记录每次宿主工具调用。observations 只记录范围外缺陷、真相冲突、缺失接口或 blocker，不改变任务范围。
 
-## 验证、审查与证据
+## full 审查与证据
 
-所有必需 verifier 必须真实执行并绑定 definition/input/output digests。ReviewReport 必须由不同上下文覆盖 TaskPacket 的 mandatory lenses；`not_applicable` 必须有理由，blocked lens 必须绑定有效决策。任何 verifier FAIL 都不能被 review PASS 覆盖。
+quick 与 full 的所有必需 verifier 都必须真实执行并绑定 definition/input/output digests。full ReviewReport 必须由不同上下文覆盖 TaskPacket 的 mandatory lenses；`not_applicable` 必须有理由，blocked lens 必须绑定有效决策。任何 verifier FAIL 都不能被 review PASS 覆盖。
 
 证据等级固定为：
 
@@ -99,6 +103,6 @@ RunRecord 的 capabilities 只记录 admitted→resolved→used，不记录每�
 
 敏感路径内容不得进入 Context、brief、日志或 EvidenceBundle，只保存安全引用。网络写入、外部服务写入、物理和生产动作必须有 execution authorization。
 
-宿主桥接只消费 controller envelope，并把真实结果写回当前契约；框架不直接嵌入 Codex SDK、不拦截每个原生调用，也不把 Agent 自述当作裁判。
+宿主桥接消费 quick `start` 或 full controller envelope，并把真实结果写回对应契约；框架不直接嵌入 Codex SDK、不拦截每个原生调用，也不把 Agent 自述当作裁判。
 
 controller、宿主桥接及过程产物目录构成受信边界。ReviewReport、AuthorityReceipt、execution authorization 和验证结果必须由宿主在真实事件发生并完成身份或执行校验后写入，Agent 不得直接伪造这些产物。框架不承诺隔离拥有同一操作系统写权限的恶意进程；若宿主不能保护过程产物和认证通道，就不得声明独立审查、Owner 或 production 证据。这个边界不引入 PKI 或工具级拦截。

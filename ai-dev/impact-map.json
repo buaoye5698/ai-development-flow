@@ -6,13 +6,19 @@
     {
       "ruleId": "FRAMEWORK-QUICK-START",
       "pathPatterns": [
-        "AGENTS.md",
         "src/cli/main.mjs",
+        "src/cli/project-state.mjs",
         "src/cli/start-command.mjs",
         "src/cli/task-routing.mjs",
+        "src/verify/index.mjs",
+        "src/verify/registry.mjs",
+        "starter/demo/minimal/README.md.tpl",
         "starter/project/AGENTS.md.tpl",
+        "starter/project/README.md.tpl",
+        "tests/bootstrap-cli.test.mjs",
         "tests/cli-end-to-end.test.mjs",
-        "tests/task-routing.test.mjs"
+        "tests/task-routing.test.mjs",
+        "tests/verify-runner.test.mjs"
       ],
       "requirementIds": ["FRM-016"],
       "acceptanceIds": ["AC-FRM-016"],

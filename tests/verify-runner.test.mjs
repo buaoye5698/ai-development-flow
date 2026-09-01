@@ -130,7 +130,7 @@ function taskPacket({
       directRequirementIds: ["REQ-001"],
       impactedRequirementIds: [],
       globalInvariantIds: [],
-      matchedImpactRuleIds: [],
+      matchedImpactRuleIds: ["VERIFY-SRC"],
       blockingDecisionIds: [],
       evidenceTargetDecisionIds: [],
       stageGate: snapshotStageGate(stageGate ?? {
@@ -182,7 +182,12 @@ function taskPacket({
 
 async function initProjectFixture(
   t,
-  { withGit = true, verifierIds = ["QUICK-PASS"], withDecision = false } = {},
+  {
+    withGit = true,
+    verifierIds = ["QUICK-PASS"],
+    withDecision = false,
+    extraImpactRule = false,
+  } = {},
 ) {
   const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), "ai-flow-verify-"));
   const projectRoot = path.join(fixtureRoot, "project");
@@ -263,6 +268,29 @@ setInterval(() => {}, 1000);
       }),
     ],
     globalInvariantVerifierIds: [],
+  });
+  await writeJson(path.join(projectRoot, "ai-dev", "impact-map.json"), {
+    schemaVersion: 1,
+    mapId: "VERIFY-IMPACT",
+    baselineId: baseline.baselineId,
+    rules: [
+      {
+        ruleId: "VERIFY-SRC",
+        pathPatterns: ["src/**"],
+        requirementIds: ["REQ-001"],
+        acceptanceIds: [],
+        verifierIds,
+      },
+      ...(extraImpactRule ? [{
+        ruleId: "VERIFY-EXTRA",
+        pathPatterns: ["src/extra/**"],
+        requirementIds: ["REQ-EXTRA"],
+        acceptanceIds: ["AT-EXTRA"],
+        verifierIds: ["VERIFY-EXTRA"],
+      }] : []),
+    ],
+    globalRequirementIds: [],
+    globalVerifierIds: [],
   });
   const decisionRegisterPath = path.join(projectRoot, "ai-dev", "decisions", "register.json");
   const decisionRegister = await jsonFile(decisionRegisterPath);
@@ -345,8 +373,7 @@ function taskVerifyArgs(fixture, tier, task = "VERIFY-TASK", expectedTaskDigest 
     task,
     "--expected-task-digest",
     expectedTaskDigest,
-    "--tier",
-    tier,
+    ...(tier ? ["--tier", tier] : []),
     "--json",
   ];
 }
@@ -402,6 +429,42 @@ test("successful cache reuse and ignored input invalidation are deterministic", 
   assert.notEqual(invalidated.json.worktreeDigest, firstWorktreeDigest);
   assert.notEqual(invalidated.json.subjectRevision, first.json.subjectRevision);
   await assert.rejects(access(path.join(fixture.projectRoot, ".ai-flow", "evil-executed")));
+});
+
+test("task-bound verification derives its tier and reports actual assets and impact", async (t) => {
+  const fixture = await initProjectFixture(t, { verifierIds: ["QUICK-PASS"] });
+  const result = await cli(taskVerifyArgs(fixture, null));
+  assert.equal(result.code, 0, result.stderr || result.stdout);
+  assert.equal(result.json.status, "pass");
+  assert.equal(result.json.requiredTier, "quick");
+  assert.equal(result.json.executedTier, "quick");
+  assert.deepEqual(result.json.actualAssets, [{
+    path: "src/value.txt",
+    assetClass: "managed_implementation",
+  }]);
+  assert.deepEqual(result.json.actualImpact.changedPaths, ["src/value.txt"]);
+  assert.deepEqual(result.json.actualImpact.impactedRequirementIds, ["REQ-001"]);
+  assert.deepEqual(result.json.actualImpact.verifierIds, ["QUICK-PASS"]);
+});
+
+test("task-bound verification blocks actual impact expansion before running verifiers", async (t) => {
+  const fixture = await initProjectFixture(t, {
+    verifierIds: ["QUICK-PASS"],
+    extraImpactRule: true,
+  });
+  await mkdir(path.join(fixture.projectRoot, "src", "extra"), { recursive: true });
+  await writeFile(path.join(fixture.projectRoot, "src", "extra", "value.txt"), "expanded\n", "utf8");
+  const result = await cli(taskVerifyArgs(fixture, null));
+  assert.equal(result.code, 2, result.stderr || result.stdout);
+  assert.equal(result.json.status, "blocked");
+  assert.equal(result.json.code, "TASK_IMPACT_EXPANDED");
+  assert.equal(result.json.results.length, 0);
+  assert.ok(result.json.errors.some(
+    (entry) => entry.field === "requirements" && entry.expanded.includes("REQ-EXTRA"),
+  ));
+  assert.ok(result.json.errors.some(
+    (entry) => entry.field === "verifiers" && entry.expanded.includes("VERIFY-EXTRA"),
+  ));
 });
 
 test("process artifacts stay outside content snapshots while Active Control judge inputs remain bound", async (t) => {

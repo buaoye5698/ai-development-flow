@@ -141,11 +141,11 @@ test("start rejects a relative worktree before reading or writing the project", 
   assert.deepEqual(await readdir(projectRoot), []);
 });
 
-test("start turns a three-field local request into a prepared quick run", async (t) => {
+test("start turns a three-field local request into in-place quick execution and preserves full isolation on request", async (t) => {
   const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), "ai-flow-start-e2e-"));
   const projectRoot = path.join(fixtureRoot, "project");
   const specPath = path.join(fixtureRoot, "spec.md");
-  const worktreePath = path.join(fixtureRoot, "quick-worktree");
+  const fullWorktreePath = path.join(fixtureRoot, "full-worktree");
   t.after(async () => rm(fixtureRoot, { recursive: true, force: true }));
   await writeFile(specPath, SPEC, "utf8");
 
@@ -230,7 +230,6 @@ test("start turns a three-field local request into a prepared quick run", async 
     "start", "--project", projectRoot,
     "--input", shortRequest,
     "--mode", "auto",
-    "--worktree", worktreePath,
     "--json",
   ]);
   assert.equal(started.code, 0, started.stderr || started.stdout);
@@ -239,19 +238,57 @@ test("start turns a three-field local request into a prepared quick run", async 
   assert.equal(started.value.selectedMode, "quick");
   assert.equal(started.value.quickEligible, true);
   assert.deepEqual(started.value.routingReasons, []);
+  assert.equal(started.value.executionKind, "in_place");
   assert.match(started.value.taskId, /^TASK-[a-f0-9]{20}$/u);
-  assert.match(started.value.runId, /^RUN-[a-f0-9]{20}$/u);
-  assert.equal(started.value.runRecord.state, "ready");
-  assert.match(started.value.runDigest, /^sha256:[a-f0-9]{64}$/u);
+  assert.equal(Object.hasOwn(started.value, "runId"), false);
+  assert.equal(Object.hasOwn(started.value, "runRecord"), false);
+  assert.equal(Object.hasOwn(started.value, "runDigest"), false);
+  assert.equal(started.value.envelope.executionKind, "in_place");
+  assert.equal(started.value.envelope.workspacePath, projectRoot.replaceAll("\\", "/"));
+  assert.equal(started.value.envelope.completionClaim, "local_verification_only");
+  assert.equal(started.value.nextAction.kind, "implement");
+  assert.equal(started.value.nextAction.afterSuccess.kind, "verify");
   await readFile(path.join(projectRoot, "ai-dev", "tasks", `${started.value.taskId}.json`), "utf8");
-  await readFile(path.join(projectRoot, ...started.value.envelope.briefRefs.agent.split("/")), "utf8");
-  await readFile(path.join(worktreePath, "AGENTS.md"), "utf8");
+  const agentBrief = await readFile(
+    path.join(projectRoot, ...started.value.envelope.briefRefs.agent.split("/")),
+    "utf8",
+  );
+  assert.match(agentBrief, /REQ-001/u);
+  assert.deepEqual(await readdir(path.join(projectRoot, "ai-dev", "runs")), []);
 
-  const abandonedAt = new Date(Date.parse(started.value.runRecord.startedAt) + 1_000).toISOString();
+  await mkdir(path.join(projectRoot, "src"), { recursive: true });
+  await writeFile(path.join(projectRoot, "src", "app.mjs"), "export const ready = true;\n", "utf8");
+  const verified = await executeCli(vendoredCli, [
+    "verify", "--project", projectRoot,
+    "--task", started.value.taskPath,
+    "--expected-task-digest", started.value.taskDigest,
+    "--json",
+  ]);
+  assert.equal(verified.code, 0, verified.stderr || verified.stdout);
+  assert.equal(verified.value.status, "pass");
+  assert.equal(verified.value.executedTier, "quick");
+  assert.deepEqual(verified.value.actualImpact.changedPaths, ["src/app.mjs"]);
+
+  const full = await executeCli(vendoredCli, [
+    "start", "--project", projectRoot,
+    "--input", shortRequest,
+    "--mode", "auto",
+    "--worktree", fullWorktreePath,
+    "--json",
+  ]);
+  assert.equal(full.code, 0, full.stderr || full.stdout);
+  assert.equal(full.value.selectedMode, "full");
+  assert.equal(full.value.executionKind, "isolated_run");
+  assert.equal(full.value.quickEligible, true);
+  assert.equal(full.value.routingReasons[0].code, "FULL_RUN_OPTION_REQUESTED");
+  assert.equal(full.value.runRecord.state, "ready");
+  await readFile(path.join(fullWorktreePath, "AGENTS.md"), "utf8");
+
+  const abandonedAt = new Date(Date.parse(full.value.runRecord.startedAt) + 1_000).toISOString();
   const abandoned = await executeCli(vendoredCli, [
     "run", "abandon", "--project", projectRoot,
-    "--run", started.value.runId,
-    "--expected-run-digest", started.value.runDigest,
+    "--run", full.value.runId,
+    "--expected-run-digest", full.value.runDigest,
     "--at", abandonedAt,
     "--reason", "Test fixture completed",
     "--json",

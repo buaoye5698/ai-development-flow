@@ -73,7 +73,14 @@ test("init dry-run has no side effect and real init is atomic, self-contained, a
   const diagnosis = json(doctor);
   assert.equal(diagnosis.status, "pass");
   assert.equal(diagnosis.metrics.managedFiles, diagnosis.metrics.verifiedManagedFiles);
-  assert.equal(diagnosis.warnings.some((entry) => entry.code === "PROJECT_NOT_READY"), true);
+  const readiness = diagnosis.warnings.find((entry) => entry.code === "PROJECT_NOT_READY");
+  assert.ok(readiness);
+  assert.deepEqual(readiness.missing, [
+    "active baseline",
+    "authorized stage gate",
+    "impact map rules",
+    "verifiers",
+  ]);
   assert.equal(
     await readFile(path.join(target, "ai-dev", "schemas", "task-packet.schema.json"), "utf8"),
     await readFile(path.join(frameworkRoot, "schemas", "task-packet.schema.json"), "utf8"),
@@ -90,7 +97,6 @@ test("init dry-run has no side effect and real init is atomic, self-contained, a
 test("the explicitly selected minimal demo reaches start with inline truth context", async (t) => {
   const root = await temporaryRoot(t, "ai-flow-demo-");
   const target = path.join(root, "minimal-demo");
-  const worktree = path.join(root, "minimal-demo-worktree");
 
   const created = await runCli([
     "init", target, "--id", "minimal-demo", "--name", "Minimal Demo", "--demo", "minimal", "--json",
@@ -117,42 +123,31 @@ test("the explicitly selected minimal demo reaches start with inline truth conte
     "commit", "-m", "initialize minimal demo",
   ], { cwd: target, encoding: "utf8", windowsHide: true });
 
-  try {
-    const started = await runCli([
-      "start",
-      "--project", target,
-      "--input", "demo-task.json",
-      "--mode", "auto",
-      "--worktree", worktree,
-      "--json",
-    ], vendoredCli);
-    assert.equal(started.code, 0, started.stdout);
-    const outcome = json(started);
-    assert.equal(outcome.status, "pass");
-    assert.equal(outcome.selectedMode, "quick");
+  const started = await runCli([
+    "start",
+    "--project", target,
+    "--input", "demo-task.json",
+    "--mode", "auto",
+    "--json",
+  ], vendoredCli);
+  assert.equal(started.code, 0, started.stdout);
+  const outcome = json(started);
+  assert.equal(outcome.status, "pass");
+  assert.equal(outcome.selectedMode, "quick");
+  assert.equal(outcome.executionKind, "in_place");
 
-    const taskPacket = JSON.parse(await readFile(path.join(target, outcome.taskPath), "utf8"));
-    const specIndex = JSON.parse(await readFile(path.join(target, outcome.specIndexPath), "utf8"));
-    const agentBrief = await readFile(path.join(target, outcome.runRecord.briefRefs.agent), "utf8");
-    for (const requirementId of taskPacket.requirementIds) {
-      const requirement = specIndex.requirements.find((entry) => entry.id === requirementId);
-      assert.equal(agentBrief.includes(requirement.statement), true);
-      if (requirement.acceptance) assert.equal(agentBrief.includes(requirement.acceptance), true);
-    }
-    for (const acceptanceId of taskPacket.acceptanceIds) {
-      const acceptance = specIndex.acceptanceCases.find((entry) => entry.id === acceptanceId);
-      assert.equal(agentBrief.includes(acceptance.title), true);
-      assert.equal(acceptance.criteria.every((criterion) => agentBrief.includes(criterion)), true);
-    }
-  } finally {
-    try {
-      await execute("git", ["-C", target, "worktree", "remove", "--force", worktree], {
-        encoding: "utf8",
-        windowsHide: true,
-      });
-    } catch {
-      // The worktree may not exist when start fails before preparation.
-    }
+  const taskPacket = JSON.parse(await readFile(path.join(target, outcome.taskPath), "utf8"));
+  const specIndex = JSON.parse(await readFile(path.join(target, outcome.specIndexPath), "utf8"));
+  const agentBrief = await readFile(path.join(target, outcome.envelope.briefRefs.agent), "utf8");
+  for (const requirementId of taskPacket.requirementIds) {
+    const requirement = specIndex.requirements.find((entry) => entry.id === requirementId);
+    assert.equal(agentBrief.includes(requirement.statement), true);
+    if (requirement.acceptance) assert.equal(agentBrief.includes(requirement.acceptance), true);
+  }
+  for (const acceptanceId of taskPacket.acceptanceIds) {
+    const acceptance = specIndex.acceptanceCases.find((entry) => entry.id === acceptanceId);
+    assert.equal(agentBrief.includes(acceptance.title), true);
+    assert.equal(acceptance.criteria.every((criterion) => agentBrief.includes(criterion)), true);
   }
 });
 

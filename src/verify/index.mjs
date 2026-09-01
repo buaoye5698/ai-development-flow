@@ -1,7 +1,9 @@
 import path from "node:path";
 
+import { buildAssetPolicy, evaluateTaskAssetWrites } from "../core/asset-policy.mjs";
 import { digestJson } from "../core/canonical.mjs";
 import { pathMatchesPattern } from "../core/path-policy.mjs";
+import { analyzeImpact } from "../task/impact-analysis.mjs";
 import { inspectProject } from "../cli/project-state.mjs";
 import { assertDirectoryIsNotSymlink } from "../cli/path-safety.mjs";
 import { executeVerificationPlan } from "./executor.mjs";
@@ -43,6 +45,48 @@ function uncoveredChanges(changedPaths, selected) {
   return changedPaths.filter((changedPath) =>
     !selected.some((verifier) =>
       verifier.inputPatterns.some((pattern) => pathMatchesPattern(changedPath, pattern))));
+}
+
+function emptyActualImpact(impactMap) {
+  return {
+    schemaVersion: 1,
+    mapId: impactMap.mapId,
+    baselineId: impactMap.baselineId,
+    changedPaths: [],
+    matchedRuleIds: [],
+    unmatchedPaths: [],
+    impactedRequirementIds: [],
+    globalInvariantIds: [...new Set(impactMap.globalRequirementIds ?? [])].sort(),
+    acceptanceIds: [],
+    verifierIds: [...new Set(impactMap.globalVerifierIds ?? [])].sort(),
+  };
+}
+
+function actualTaskImpact(plan, changedPaths) {
+  return changedPaths.length === 0
+    ? emptyActualImpact(plan.impactMap)
+    : analyzeImpact({
+      changedPaths,
+      impactMap: plan.impactMap,
+      baselineId: plan.task.baselineId,
+      requireAllPathsMapped: plan.task.taskKind === "implementation"
+        || plan.task.taskKind === "evidence_collection",
+    });
+}
+
+function impactExpansions(actualImpact, task) {
+  const checks = [
+    ["requirements", [
+      ...actualImpact.impactedRequirementIds,
+      ...actualImpact.globalInvariantIds,
+    ], task.requirementIds ?? []],
+    ["acceptance", actualImpact.acceptanceIds, task.acceptanceIds ?? []],
+    ["verifiers", actualImpact.verifierIds, task.verification?.verifierIds ?? []],
+  ];
+  return checks.flatMap(([field, actualValues, declaredValues]) => {
+    const expanded = [...new Set(actualValues)].filter((entry) => !declaredValues.includes(entry)).sort();
+    return expanded.length > 0 ? [{ field, expanded }] : [];
+  });
 }
 
 export async function verifyProject({
@@ -123,6 +167,8 @@ export async function verifyProject({
 
   let scope = null;
   let changedPaths;
+  let actualAssets = null;
+  let actualImpact = null;
   if (plan.task) {
     scope = await inspectTaskScope({
       projectRoot,
@@ -140,6 +186,47 @@ export async function verifyProject({
       });
     }
     changedPaths = scope.changedPaths;
+    const assetPolicy = buildAssetPolicy({
+      config: plan.config,
+      baseline: plan.baseline,
+      impactMap: plan.impactMap,
+    });
+    actualAssets = evaluateTaskAssetWrites({
+      taskKind: plan.task.taskKind,
+      paths: changedPaths,
+      policy: assetPolicy,
+    });
+    if (!actualAssets.ok) {
+      return blocked("TASK_ASSET_VIOLATION", "actual Git changes use an asset class forbidden for the task kind", {
+        errors: actualAssets.violations,
+        scope,
+        actualAssets: actualAssets.classified,
+      });
+    }
+    try {
+      actualImpact = actualTaskImpact(plan, changedPaths);
+    } catch (error) {
+      return blocked("TASK_IMPACT_INVALID", "actual Git changes cannot be justified by base Active Control", {
+        errors: [{
+          code: error.code ?? "TASK_IMPACT_INVALID",
+          message: error.message,
+          ...(error.details ?? {}),
+        }],
+        scope,
+      });
+    }
+    const expansions = impactExpansions(actualImpact, plan.task);
+    if (expansions.length > 0) {
+      return blocked("TASK_IMPACT_EXPANDED", "actual impact exceeds the TaskPacket declaration", {
+        errors: expansions.map((entry) => ({
+          code: "TASK_IMPACT_EXPANDED",
+          message: `actual ${entry.field} impact exceeds the TaskPacket`,
+          ...entry,
+        })),
+        scope,
+        actualImpact,
+      });
+    }
   } else {
     changedPaths = await changedPathsSince(projectRoot, git.headRevision);
   }
@@ -193,7 +280,7 @@ export async function verifyProject({
       complete: execution.complete,
       requiredTier: plan.requiredTier,
       executedTier: plan.executedTier,
-      tier,
+      tier: plan.executedTier,
       projectRoot,
       taskPath: plan.taskPath,
       expectedTaskDigest: boundTaskDigest,
@@ -210,6 +297,8 @@ export async function verifyProject({
         changedPaths,
         excludedControlPaths: scope?.excludedControlPaths ?? [],
       },
+      ...(actualAssets ? { actualAssets: actualAssets.classified } : {}),
+      ...(actualImpact ? { actualImpact } : {}),
       warnings: doctor.warnings,
       errors: [],
       ...execution,

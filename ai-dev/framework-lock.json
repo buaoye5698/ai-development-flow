@@ -3,7 +3,7 @@
   "frameworkName": "ai-development-flow",
   "frameworkVersion": "1.0.0",
   "installMode": "vendored",
-  "distributionDigest": "sha256:b1f61a3f70fdbfecb963b8b259c4ae00d4e0a2a6f6090e08f981c5959aa18730",
+  "distributionDigest": "sha256:590ac06566b0b6c9333b4e0db3ee9c968593b376a506d405ea79b8a9d44a1ce5",
   "managedFiles": [
     {
       "path": "bin/ai-flow.mjs",
@@ -139,7 +139,7 @@
     },
     {
       "path": "src/cli/main.mjs",
-      "digest": "sha256:d22e0e2d4afd2a836f0a5414cddeebd01890e2228336df0c97526bed59343dfd",
+      "digest": "sha256:5e12cfb33875ad5d36f97f25b74bc99819ce635e16d89b067310e1b8ac5c89f9",
       "ownership": "framework",
       "source": "src/cli/main.mjs"
     },
@@ -163,7 +163,7 @@
     },
     {
       "path": "src/cli/project-state.mjs",
-      "digest": "sha256:a35d2e967a2a62ef58b728d85901cf43c811163cbcb9be2cc5572d7af37beee1",
+      "digest": "sha256:1763dcce330504efb637c80f25ceb2f741b589982f3bf770e0dcebb2781c7b41",
       "ownership": "framework",
       "source": "src/cli/project-state.mjs"
     },
@@ -187,7 +187,7 @@
     },
     {
       "path": "src/cli/start-command.mjs",
-      "digest": "sha256:91824562b31b266b6d327e43af67fad0d0c719aa7173ba9bdf513fda5cda6a9a",
+      "digest": "sha256:75da654ad7244209ae316ac5dc80cf01cb9f14d00179f74452393983d1cb43fc",
       "ownership": "framework",
       "source": "src/cli/start-command.mjs"
     },
@@ -367,7 +367,7 @@
     },
     {
       "path": "src/verify/index.mjs",
-      "digest": "sha256:eb72f101d473358df35ccca49077264b10d6e467e8ffffe3340fab01cee9b0e4",
+      "digest": "sha256:35b6b74706d818125ece4979e9c2a932c5e5c621ad4b63bebc1efe6533dbd579",
       "ownership": "framework",
       "source": "src/verify/index.mjs"
     },
@@ -379,7 +379,7 @@
     },
     {
       "path": "src/verify/registry.mjs",
-      "digest": "sha256:87513ed286a853a0110ff05b4d0649b25f670c4b63eb61ceb9e0e4f488ac77a1",
+      "digest": "sha256:f508068047f586369388f215828b2af5b26b4ccaa7c072a793cd14541e5aef65",
       "ownership": "framework",
       "source": "src/verify/registry.mjs"
     },
@@ -475,7 +475,7 @@
     },
     {
       "path": "starter/demo/minimal/README.md.tpl",
-      "digest": "sha256:27c0ae3484705e54e8466064a794c3757b92ec1b3dbbf259826e9071311e89cc",
+      "digest": "sha256:1560554448208731aa55bc404fb51d2a5ae9f96030b18822b55ef996d086c607",
       "ownership": "framework",
       "source": "starter/demo/minimal/README.md.tpl"
     },
@@ -517,7 +517,7 @@
     },
     {
       "path": "starter/project/AGENTS.md.tpl",
-        "digest": "sha256:8a0ce359f9afb863bf663306d05b3ace9219728e6a6f7f659a1a527dc894c473",
+      "digest": "sha256:c08903d4c14efc8a9038a1fc7f210a167dc71a68f59907318314ef5fc5c917fc",
       "ownership": "framework",
       "source": "starter/project/AGENTS.md.tpl"
     },
@@ -565,7 +565,7 @@
     },
     {
       "path": "starter/project/README.md.tpl",
-      "digest": "sha256:f10c52452b3e0c8cb078494bcb92564cfafc4fb8159099f1084e04b79dfcc4a2",
+      "digest": "sha256:076d508f3c64e7ad32bc8d9ac8fdb84dc7bdbb9856b3af8d0a19b0c64251bf68",
       "ownership": "framework",
       "source": "starter/project/README.md.tpl"
     }

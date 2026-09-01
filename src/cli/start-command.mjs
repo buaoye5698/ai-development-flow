@@ -13,9 +13,17 @@ import {
 } from "./project-artifacts.mjs";
 import { readRequest } from "./project-runtime.mjs";
 import { normalizeRepoPath } from "./path-safety.mjs";
-import { inspectGitRepository } from "../verify/git-scope.mjs";
+import {
+  frameworkProcessArtifactPrefixes,
+  inspectGitRepository,
+  inspectTaskScope,
+} from "../verify/git-scope.mjs";
 import { prepareRunCommand } from "./controller-commands.mjs";
-import { compileTaskCommand } from "./static-commands.mjs";
+import {
+  buildContextCommand,
+  compileTaskCommand,
+  renderContextCommand,
+} from "./static-commands.mjs";
 import { evaluateTaskMode } from "./task-routing.mjs";
 
 const PORTABLE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{1,127}$/u;
@@ -110,6 +118,157 @@ function defaultWorktreePath(projectId, runId) {
   return path.join(os.tmpdir(), "ai-flow-worktrees", `${projectId}-${runId}`);
 }
 
+function logicalCommand(name, argumentsList) {
+  return { name, arguments: argumentsList };
+}
+
+function routeFullForRunOptions(routing, { worktreePath, authorizationPath }) {
+  const optionNames = [
+    ...(worktreePath !== null ? ["--worktree"] : []),
+    ...(authorizationPath !== null ? ["--authorization"] : []),
+  ];
+  if (routing.selectedMode === "full" || optionNames.length === 0) return routing;
+  return {
+    ...routing,
+    selectedMode: "full",
+    fallbackFromQuick: routing.requestedMode === "quick",
+    reasons: [{
+      code: "FULL_RUN_OPTION_REQUESTED",
+      message: "isolated-run options require the full flow",
+      options: optionNames,
+    }],
+  };
+}
+
+function quickVerificationCommand(projectRoot, taskPath, taskDigest) {
+  return logicalCommand("verify", [
+    "--project",
+    projectRoot,
+    "--task",
+    taskPath,
+    "--expected-task-digest",
+    taskDigest,
+    "--json",
+  ]);
+}
+
+async function prepareQuickExecution({
+  ctx,
+  active,
+  compilation,
+  git,
+  taskId,
+  at,
+}) {
+  const taskPacket = compilation.taskPacket;
+  const workspacePath = ctx.projectRoot.replaceAll("\\", "/");
+  const scope = await inspectTaskScope({
+    projectRoot: ctx.projectRoot,
+    baseRevision: taskPacket.baseRevision,
+    taskPath: compilation.outputPath,
+    allowedPaths: taskPacket.scope.allowedPaths,
+    forbiddenPaths: taskPacket.scope.forbiddenPaths,
+    controlPaths: [],
+    excludedPrefixes: frameworkProcessArtifactPrefixes(active.config),
+  });
+  if (!scope.ok) {
+    operationError("QUICK_SCOPE_VIOLATION", "current Git changes are outside the quick task scope", {
+      errors: scope.errors,
+      scope,
+    });
+  }
+
+  const contextRequestPath = normalizeRepoPath(path.posix.join(
+    active.config.paths.generated,
+    "requests",
+    `${taskId}-quick-context.json`,
+  ));
+  const contextRequestArtifact = await writeJsonArtifact({
+    projectRoot: ctx.projectRoot,
+    relativePath: contextRequestPath,
+    allowedDirectory: active.config.paths.generated,
+    value: {
+      task: taskId,
+      manifestId: `${taskId}:quick-context`,
+      subjectRevision: git.headRevision,
+      createdAt: at,
+      contracts: [],
+      exclusions: [],
+    },
+  });
+  const context = await buildContextCommand({
+    project: ctx.projectRoot,
+    input: contextRequestPath,
+  });
+  if (context.status !== "pass") return context;
+  const [agentBrief, humanBrief] = await Promise.all([
+    renderContextCommand({
+      project: ctx.projectRoot,
+      task: taskId,
+      context: context.outputPath,
+      audience: "agent",
+    }),
+    renderContextCommand({
+      project: ctx.projectRoot,
+      task: taskId,
+      context: context.outputPath,
+      audience: "human",
+    }),
+  ]);
+  if (agentBrief.status !== "pass") return agentBrief;
+  if (humanBrief.status !== "pass") return humanBrief;
+
+  const verificationCommand = quickVerificationCommand(
+    ctx.projectRoot,
+    compilation.outputPath,
+    compilation.taskDigest,
+  );
+  const briefRefs = {
+    agent: agentBrief.outputPath,
+    human: humanBrief.outputPath,
+  };
+  return {
+    status: "pass",
+    executionKind: "in_place",
+    envelope: {
+      executionKind: "in_place",
+      workspacePath,
+      taskId: taskPacket.taskId,
+      taskKind: taskPacket.taskKind,
+      taskPacketRef: compilation.outputPath,
+      taskPacketDigest: compilation.taskDigest,
+      baseRevision: taskPacket.baseRevision,
+      controlDigest: taskPacket.controlDigest,
+      subjectContentDigest: context.contextManifest.subjectContentDigest,
+      allowedPaths: taskPacket.scope.allowedPaths,
+      forbiddenPaths: taskPacket.scope.forbiddenPaths,
+      allowedAssetClasses: taskPacket.assets.allowedWriteClasses,
+      capabilities: taskPacket.capabilities.map((entry) => entry.capabilityId),
+      contextManifestRef: context.outputPath,
+      briefRefs,
+      completionClaim: "local_verification_only",
+      verificationCommand,
+    },
+    nextAction: {
+      kind: "implement",
+      command: null,
+      workspacePath,
+      briefRef: briefRefs.agent,
+      afterSuccess: {
+        kind: "verify",
+        command: verificationCommand,
+      },
+    },
+    contextPath: context.outputPath,
+    contextRequestPath,
+    contextRequestArtifact,
+    briefRefs,
+    scope,
+    warnings: context.warnings,
+    errors: [],
+  };
+}
+
 export function startTaskCommand({
   project,
   input,
@@ -153,7 +312,6 @@ export function startTaskCommand({
       decisionRegister: active.decisionRegister,
     });
     const taskId = portableId(shortRequest.taskId, "taskId", "TASK");
-    const runId = portableId(shortRequest.runId, "runId", "RUN");
     const at = shortRequest.at ?? new Date().toISOString();
     const taskRequest = expandedTaskRequest({
       shortRequest,
@@ -182,13 +340,42 @@ export function startTaskCommand({
         ...compilation,
         requestedMode: mode,
         taskId,
-        runId,
         taskRequestPath,
         taskRequestArtifact,
       };
     }
 
-    const routing = evaluateTaskMode({ requestedMode: mode, taskPacket: compilation.taskPacket });
+    const routing = routeFullForRunOptions(
+      evaluateTaskMode({ requestedMode: mode, taskPacket: compilation.taskPacket }),
+      { worktreePath, authorizationPath },
+    );
+    if (routing.selectedMode === "quick") {
+      const quick = await prepareQuickExecution({
+        ctx,
+        active,
+        compilation,
+        git,
+        taskId,
+        at,
+      });
+      return {
+        ...quick,
+        target: ctx.projectRoot,
+        requestedMode: routing.requestedMode,
+        selectedMode: routing.selectedMode,
+        quickEligible: routing.quickEligible,
+        fallbackFromQuick: routing.fallbackFromQuick,
+        routingReasons: routing.reasons,
+        taskId,
+        taskRequestPath,
+        taskRequestArtifact,
+        taskPath: compilation.outputPath,
+        taskDigest: compilation.taskDigest,
+        specIndexPath: compilation.specIndexOutputPath,
+      };
+    }
+
+    const runId = portableId(shortRequest.runId, "runId", "RUN");
     const usesDefaultWorktree = worktreePath === null;
     const targetWorktree = worktreePath ?? defaultWorktreePath(active.config.projectId, runId);
     if (!path.isAbsolute(targetWorktree)) {
@@ -209,6 +396,7 @@ export function startTaskCommand({
     });
     return {
       ...prepared,
+      executionKind: "isolated_run",
       target: ctx.projectRoot,
       requestedMode: routing.requestedMode,
       selectedMode: routing.selectedMode,

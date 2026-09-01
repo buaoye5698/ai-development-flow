@@ -4,22 +4,25 @@
 
 ## 1. 定位与运行模型
 
-本框架是跨项目复用的 Codex/AI 开发控制框架。它只控制真相、范围、权限、验证、独立审查和证据，不替项目决定业务、技术栈、模型、工具或调度方式，也不拦截 Agent 的每一次推理、文件写入和工具调用。
+本框架是通用的 Codex 开发任务骨架与控制框架，不是承载具体业务产品的项目。它规定 Codex 如何读取目标项目自己的真相源、限定任务范围、实施、验证和交付；具体需求、验收、技术栈、verifier、impact map 和 stage gate 均由接入后的目标项目提供。框架不拦截 Agent 的每一次推理、文件写入和工具调用。
 
-唯一运行模型如下：
+执行模型分为两个完成层级：
 
 ```text
 Active Truth + Active Control（基准提交）
-  → TaskPacket
-  → 隔离 worktree 中的 Candidate Change
-  → subjectContentDigest
-  → 确定性验证
-  → 独立覆盖审查
-  → EvidenceBundle
-  → 外部提交或合并精确内容
+  → TaskPacket + ContextManifest + Agent Brief
+  ├─ quick：当前 Git 工作区中的 managed implementation
+  │    → task-bound 确定性验证
+  │    → 本地验证结果
+  └─ full：隔离 worktree 中的 Candidate Change
+       → subjectContentDigest
+       → 确定性验证
+       → 独立覆盖审查
+       → EvidenceBundle
+       → 外部提交或合并精确内容
 ```
 
-基准提交中的 Truth 与 Control 是当前 Active。隔离 worktree 中的修改只是 Candidate；Candidate 不能裁判自己。只有外部目标引用接受了证据绑定的精确内容，相关修改才在该目标中成为 Active。
+两条路径都以完整 base commit 中的 Truth 与 Control 为当前 Active。`quick` 只适用于确定性判定为低风险、无副作用、无需外部权威的普通 implementation；它在当前 Git 工作区实施并复核真实 scope、资产、impact 和 verifier，只证明本地任务验证通过，不生成 RunRecord、独立审查或 EvidenceBundle，也不声明 `accepted`、Owner 或 production 证据。`full` 保留隔离、控制器、独立审查和证据绑定；只有外部目标引用接受 EvidenceBundle 绑定的精确内容，相关修改才在该目标中成为 Active。
 
 controller、宿主桥接和过程产物目录构成受信边界。canonical digest 只证明内容绑定，不构成身份签名；宿主负责认证授权签发者与外部权威，并分配真实隔离的 reviewer context。框架防止合作但不可靠 Agent 的范围漂移、绑定漂移和以自述代替证据，不承诺抵御能以同一操作系统身份修改过程产物并重算摘要的恶意进程。
 
@@ -35,9 +38,9 @@ controller、宿主桥接和过程产物目录构成受信边界。canonical dig
 
 验收：已存在目标、冲突文件和 dry-run 均不被覆盖；初始化后的项目独立拥有自己的真相、决策和证据。
 
-**FRM-002（必须｜Active 与 Candidate）** 每次运行必须以完整 base commit 固定 Active Truth 与 Active Control，Candidate 只能存在于该 base 创建的隔离 worktree 中，当前运行不得把 Candidate Control 用作自身裁判。
+**FRM-002（必须｜Active 与 Candidate）** 每个任务必须以完整 base commit 固定 Active Truth 与 Active Control。`quick` 只能在当前 Git 工作区修改 managed implementation；`full` Candidate 只能存在于该 base 创建的隔离 worktree 中。任何路径都不得把 Candidate Control 用作自身裁判。
 
-验收：验证器、Schema、策略、AGENTS 或 registry 的候选修改不会改变当前运行的判定；只有接受 EvidenceBundle 所绑定精确内容的外部目标引用才激活修改。
+验收：quick 不接纳 truth、control 或其他资产类别写入；验证器、Schema、策略、AGENTS 或 registry 的候选修改不会改变当前任务的判定；只有 full EvidenceBundle 所绑定精确内容被外部目标接受后，框架才声明激活。
 
 **FRM-003（必须｜真相与控制绑定）** 项目配置、baseline 和 SpecIndex 必须共同固定 canonical 真相、完整 SpecIndex digest、base revision、框架分发来源、适配器模块与配置，以及可解释的 Truth/Control component digests；编译器与裁判必须从同一 base revision 读取这些输入。
 
@@ -57,33 +60,33 @@ controller、宿主桥接和过程产物目录构成受信边界。canonical dig
 
 **FRM-007（必须｜上下文与指令来源）** ContextManifest 必须由同一 TaskPacket 派生；Agent Brief 与 Human Brief 必须从同一不可编辑输入确定性渲染，Agent Brief 必须显式展示 TaskPacket 的任务约束。Codex 指令链按 `AGENTS.override.md`/`AGENTS.md`、根到目标目录、空文件和大小限制解析。
 
-验收：`run prepare` 自动生成运行所需的 manifest 与 brief；相同输入产生相同结果；Agent Brief 不遗漏任务约束；多写路径得到不同指令链时阻断并要求拆分任务；敏感内容只保留引用。
+验收：quick `start` 与 full `run prepare` 都自动生成所需 manifest 与 brief；相同输入产生相同结果；Agent Brief 不遗漏任务约束；多写路径得到不同指令链时阻断并要求拆分任务；敏感内容只保留引用。
 
 **FRM-008（必须｜稳定内容主体）** subjectContentDigest 必须由 base commit 与排序后的最终变更条目计算，覆盖普通文件、符号链接、gitlink、删除、Git mode 和原始字节摘要；rename 规范化为删除加新增。
 
 验收：暂存、取消暂存和提交状态不改变相同内容的摘要；换行字节差异会改变摘要；Evidence、任务、运行、审查和其他过程产物不进入被证明主体。
 
-**FRM-009（必须｜确定性控制器）** `run prepare|inspect|resume|advance|abandon` 必须以原子单写者锁、compare-and-swap 和 checkpoint 控制生命周期；prepare 只能在用户明确给出的全新路径创建 detached isolated worktree。
+**FRM-009（必须｜确定性控制器）** full 的 `run prepare|inspect|resume|advance|abandon` 必须以原子单写者锁、compare-and-swap 和 checkpoint 控制生命周期；prepare 只能在用户明确给出的全新路径创建 detached isolated worktree。quick 不创建或模拟 RunRecord。
 
 验收：并发写者被拒绝；expectedRunDigest 不匹配不能 advance；prepare 与成功 advance 直接返回下一次操作所需的 runDigest；只有 task、base、control、worktree identity 和 checkpoint content 全部一致才可 resume；abandon 只升级状态并释放锁，不删除现场。
 
-**FRM-010（必须｜Active Control 裁判）** 确定性验证、资产策略、Schema、impact map、verifier registry 和审查门必须从 base revision 的 Active Control 加载。
+**FRM-010（必须｜Active Control 裁判）** quick task-bound 验证与 full 的确定性验证、资产策略、Schema、impact map、verifier registry 和审查门都必须从 base revision 的 Active Control 加载。
 
 验收：Candidate 对上述控制资产的修改只作为被测对象；当前运行无法通过修改裁判规则让自己 PASS。
 
-**FRM-011（必须｜实际影响复核）** TaskPacket 编译时计算计划 impact，控制器在实际 diff 后重新计算 scope、资产分类和 impact；实际需求、验收或 verifier 超出 TaskPacket 时必须 stale 并重新编译。
+**FRM-011（必须｜实际影响复核）** TaskPacket 编译时计算计划 impact；quick task-bound verify 与 full 控制器都必须根据实际 diff 重新计算 scope、资产分类和 impact。实际需求、验收或 verifier 超出 TaskPacket 时必须停止并重新编译。
 
 验收：实际 impact 扩张、漏报 verifier、越界路径或控制摘要变化均停止自动推进，不自动扩大当前任务。
 
-**FRM-012（必须｜验证与覆盖审查）** 最终 PASS 必须先满足全部确定性 verifier，再由不同上下文完成 mandatory lens coverage；review PASS 不能覆盖 verifier FAIL。scope lens 只基于当前任务与既有架构识别无具体依据的扩张，不以代码行数、文件数或抽象数量作为目标，也不得以简化为由削弱需求、正确性或必要质量约束。
+**FRM-012（必须｜验证与覆盖审查）** quick 本地验证必须满足 TaskPacket 要求的全部确定性 verifier，但不得据此声明独立审查或 full `accepted`。full 最终 PASS 必须先满足全部确定性 verifier，再由不同上下文完成 mandatory lens coverage；review PASS 不能覆盖 verifier FAIL。scope lens 只基于当前任务与既有架构识别无具体依据的扩张，不以代码行数、文件数或抽象数量作为目标，也不得以简化为由削弱需求、正确性或必要质量约束。
 
 验收：缺失 lens、无理由的 `not_applicable`、未绑定决策的 blocked lens、自审、上下文复用或任一 verifier FAIL 均不能放行；scope finding 必须给出相对于任务或既有架构的具体扩张证据，单纯偏好更短实现不构成 finding。
 
-**FRM-013（必须｜运行记录）** RunRecord 必须贯穿 taskPacketDigest、controlDigest 和 subjectContentDigest，并记录 checkpoint、授权消费、capabilities 的 admitted→resolved→used 进展及只报告不扩权的 observations。
+**FRM-013（必须｜运行记录）** full RunRecord 必须贯穿 taskPacketDigest、controlDigest 和 subjectContentDigest，并记录 checkpoint、授权消费、capabilities 的 admitted→resolved→used 进展及只报告不扩权的 observations；quick 不创建 RunRecord。
 
 验收：used 不是 resolved 的子集、resolved 不是 admitted 的子集时拒绝推进；observation 不改变 scope、验收、验证器或授权。
 
-**FRM-014（必须｜证据与激活）** EvidenceBundle 是变更证明主干，必须绑定 TaskPacket、base、Active Control、subjectContentDigest、验证结果、审查覆盖、authority receipts 和目标激活信息；不得以 AI 自述、文件存在或命令字符串作为 PASS 证据。
+**FRM-014（必须｜证据与激活）** full EvidenceBundle 是变更证明主干，必须绑定 TaskPacket、base、Active Control、subjectContentDigest、验证结果、审查覆盖、authority receipts 和目标激活信息；quick 验证结果不构成 EvidenceBundle 或激活证明。不得以 AI 自述、文件存在或命令字符串作为 PASS 证据。
 
 验收：任一绑定漂移即 stale；Bundle 自身及过程产物不参与 subject；Owner/production 等级只能由相应外部 authority receipt 证明；当前 run 不自证 Candidate Control 已激活。
 
@@ -91,15 +94,15 @@ controller、宿主桥接和过程产物目录构成受信边界。canonical dig
 
 验收：任务或验证器声明的副作用都不能在编译时丢失；未声明或未授权的外部写入被阻断；敏感资产只保留路径或安全引用，不读取或回显内容。
 
-**FRM-016（必须｜轻量宿主边界）** 核心保持 Node.js 20+、ESM、零运行时依赖、确定性且无副作用；宿主适配器只消费控制器 envelope，不直接嵌入 Codex SDK，也不记录每次原生工具调用。本地宿主可通过 `start` 极简入口把短请求扩展为完整 TaskPacket 并准备隔离运行；入口模式采用 `auto|quick|full`，用户或 AI 只能表达模式偏好，最终由确定性资格检查决定。只有已授权阶段中、无未决阻断、低风险、无副作用与外部权威、只使用仓库读写能力、只写 managed implementation、采用 quick verifier tier 且最高要求为 contract 证据的 implementation 才可选择 quick；`quick` 不合格时回落 full，不得缩减 TaskPacket、控制器或证据门。
+**FRM-016（必须｜轻量宿主边界）** 核心保持 Node.js 20+、ESM、零运行时依赖、确定性且无副作用；宿主适配器消费 `start` 或 controller envelope，不直接嵌入 Codex SDK，也不记录每次原生工具调用。本地宿主可通过 `start` 极简入口把短请求扩展为完整 TaskPacket、ContextManifest 和 brief。入口模式采用 `auto|quick|full`，用户或 AI 只能表达模式偏好，最终由确定性资格检查决定。只有已授权阶段中、无未决阻断、低风险、无副作用与外部权威、只使用仓库读写能力、只写 managed implementation、采用 quick verifier tier 且最高要求为 contract 证据的 implementation 才可选择 quick；quick 在当前 Git 工作区实施，并以 task-bound verify 结束，不创建 worktree、RunRecord、独立审查或 EvidenceBundle。`quick` 不合格、显式提供隔离运行选项或显式选择 full 时走完整流程。
 
-验收：`src/core/**` 不调用 AI、网络、Git 或外部服务；Agent 可在 envelope 范围内使用宿主原生能力；短请求可完整生成任务、运行与隔离执行入口，模式资格由完整 TaskPacket 确定性裁决，显式 full 始终保留完整流程，auto/quick 只有满足全部 quick 资格才选 quick，否则回落 full；正式扩展点只保留规格适配器、验证器适配器和执行宿主桥接；宿主不能保护认证通道和过程产物时不得声明独立审查、Owner 或 production 证据。
+验收：`src/core/**` 不调用 AI、网络、Git 或外部服务；Agent 可在 envelope 范围内使用宿主原生能力；quick 短请求生成完整任务与上下文但不生成 full 过程产物，task-bound verify 自动采用 TaskPacket tier 并复核真实 scope、资产和 impact；full 保留完整隔离、控制器、审查和证据门；auto/quick 不合格时回落 full；正式扩展点只保留规格适配器、验证器适配器和执行宿主桥接；宿主不能保护认证通道和过程产物时不得声明独立审查、Owner 或 production 证据。
 
-**FRM-017（必须｜停止与受限返修）** 未决决策、真相冲突、范围扩大、裁判修改、重复问题、A-B-A 振荡、轮次耗尽、授权问题或未经授权副作用必须停止自动循环；返修仍受原 TaskPacket 约束。
+**FRM-017（必须｜停止与受限返修）** quick 遇到未决决策、真相冲突、范围或 impact 扩大、裁判修改及任何不合格条件时必须停止或回落 full；full 在重复问题、A-B-A 振荡、轮次耗尽、授权问题或未经授权副作用时必须停止自动循环。任何返修仍受原 TaskPacket 约束。
 
 验收：任一停止条件出现时状态转为 blocked 或 escalated 并保留现场，不通过修改任务、规格、验收或证据门迁就实现。
 
-**FRM-018（必须｜验证与交付）** 普通总检查必须覆盖核心安全不变量和两条 golden flow，并只对实际分发的文本内容执行泄漏扫描；发布检查另行覆盖 vendored CLI、真实临时 Git worktree、打包清单与私有制品卫生，不以真实 Codex、网络或 GitHub 作为测试裁判。
+**FRM-018（必须｜验证与交付）** 普通总检查必须覆盖核心安全不变量、quick 当前工作区路径和 full 隔离闭环，并只对实际分发的文本内容执行泄漏扫描；发布检查另行覆盖 vendored CLI、真实临时 Git worktree、打包清单与私有制品卫生，不以真实 Codex、网络或 GitHub 作为测试裁判。
 
 验收：`npm run check` 与 `npm run release:check` 均确定性通过；工作区内未进入分发清单的临时资产不制造 self-check 假失败；发布检查不发布包、不写远端、不把私有或临时内容装入制品。
 
@@ -108,23 +111,23 @@ controller、宿主桥接和过程产物目录构成受信边界。canonical dig
 | 验收 ID | 标题 | 通过条件 |
 | --- | --- | --- |
 | AC-FRM-001 | 初始化与接管安全 | init 不覆盖；adopt 默认只读；冲突整体拒绝 |
-| AC-FRM-002 | Candidate 不自证 | base Active Control 裁判；目标接受精确内容后才激活 |
+| AC-FRM-002 | Candidate 不自证 | quick 仅写 managed implementation；full 隔离 Candidate；两者都由 base Active Control 裁判 |
 | AC-FRM-003 | 完整来源绑定 | 编译与裁判从同一 base 复算 SpecIndex、适配器、分发和 Truth/Control 摘要 |
 | AC-FRM-004 | TaskPacket 封闭 | task compile 自动生成 base-bound SpecIndex；任务约束、scope、资产、审查、能力、风险、验证与摘要全部一致 |
 | AC-FRM-005 | 资产权限矩阵 | 四类任务的声明写入与实际 diff 均满足资产规则 |
 | AC-FRM-006 | 一次性授权 | 过期、篡改、越权和 nonce 重放全部拒绝 |
-| AC-FRM-007 | 指令与 brief | prepare 自动生成上下文；nested AGENTS 正确绑定；双 brief 同源且 Agent Brief 展示任务约束 |
+| AC-FRM-007 | 指令与 brief | quick start 与 full prepare 自动生成上下文；nested AGENTS 正确绑定；双 brief 同源且 Agent Brief 展示任务约束 |
 | AC-FRM-008 | 内容摘要 | 原始字节和 Git mode 被证明；Git 状态与过程产物不影响摘要 |
-| AC-FRM-009 | 控制器恢复 | 单写者、CAS、成功操作返回下一摘要、resume fail-closed、abandon 保留现场 |
+| AC-FRM-009 | 控制器恢复 | quick 不伪造 RunRecord；full 单写者、CAS、成功操作返回下一摘要、resume fail-closed、abandon 保留现场 |
 | AC-FRM-010 | 基准裁判 | Candidate registry、Schema、policy 和 AGENTS 不能改变当前裁判 |
-| AC-FRM-011 | 实际 impact | 实际扩张立即 stale；不自动修改 TaskPacket |
-| AC-FRM-012 | 审查覆盖 | mandatory lenses 全覆盖；scope finding 有具体扩张证据；verifier FAIL 不可被覆盖 |
-| AC-FRM-013 | 运行语义 | capability 单调推进；observation 只记录不扩权 |
-| AC-FRM-014 | Evidence 绑定 | 证据精确绑定 subject 与外部激活目标且可判新鲜度 |
+| AC-FRM-011 | 实际 impact | quick verify 与 full controller 都复核真实影响；扩张立即停止且不自动修改 TaskPacket |
+| AC-FRM-012 | 验证与审查 | quick 只声明确定性本地验证；full mandatory lenses 全覆盖且 verifier FAIL 不可被覆盖 |
+| AC-FRM-013 | 运行语义 | quick 无 RunRecord；full capability 单调推进且 observation 只记录不扩权 |
+| AC-FRM-014 | Evidence 绑定 | quick 不声明激活；full 证据精确绑定 subject 与外部激活目标且可判新鲜度 |
 | AC-FRM-015 | 副作用与敏感信息 | 请求与验证器副作用完整合并；外部写入需授权；敏感内容不进入上下文、日志和证据 |
-| AC-FRM-016 | 轻量宿主 | 核心零运行时依赖；宿主只消费 envelope；短请求生成完整任务与隔离运行；auto/quick 由确定性资格检查裁决且不合格回落 full；受信边界明确；无工具级拦截 |
-| AC-FRM-017 | 停止与返修 | 所有停止条件 fail-closed；返修不越过原边界 |
-| AC-FRM-018 | 总检查与发布检查 | 普通检查覆盖安全闭环且只扫描分发文本；发布检查只验证本地制品与真实临时 worktree |
+| AC-FRM-016 | 轻量宿主 | quick 当前工作区执行且不生成 full 产物；full 保留完整闭环；auto/quick 确定性分流且不合格回落 full |
+| AC-FRM-017 | 停止与返修 | quick 扩张立即停止或回落 full；full 停止条件 fail-closed；返修不越过原边界 |
+| AC-FRM-018 | 总检查与发布检查 | 普通检查覆盖 quick 与 full 安全语义且只扫描分发文本；发布检查只验证本地制品与真实临时 worktree |
 
 ## 5. 需求追踪
 

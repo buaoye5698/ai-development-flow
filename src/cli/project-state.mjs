@@ -77,6 +77,7 @@ export async function inspectProject(targetDir) {
   const errors = [];
   const warnings = [];
   const metrics = { managedFiles: 0, verifiedManagedFiles: 0, truthSources: 0 };
+  const readinessMissing = [];
 
   if (!await exists(rootDir)) {
     errors.push(finding("PROJECT_MISSING", "target project does not exist", { path: rootDir }));
@@ -186,8 +187,38 @@ export async function inspectProject(targetDir) {
       }
     }
     if (baseline.status === "draft") {
-      warnings.push(finding("PROJECT_NOT_READY", "baseline is draft; product implementation tasks remain blocked"));
+      readinessMissing.push("active baseline");
     }
+  }
+
+  if (config && baseline) {
+    try {
+      const decisionRegister = await readSafeJson(rootDir, baseline.decisionRegister);
+      if (!(decisionRegister.stageGates ?? []).some((entry) => entry.status === "authorized")) {
+        readinessMissing.push("authorized stage gate");
+      }
+    } catch {
+      readinessMissing.push("decision register");
+    }
+    try {
+      const impactMap = await readSafeJson(rootDir, "ai-dev/impact-map.json");
+      if ((impactMap.rules ?? []).length === 0) readinessMissing.push("impact map rules");
+    } catch {
+      readinessMissing.push("impact map");
+    }
+    try {
+      const verifierRegistry = await readSafeJson(rootDir, "ai-dev/verifiers/registry.json");
+      if ((verifierRegistry.verifiers ?? []).length === 0) readinessMissing.push("verifiers");
+    } catch {
+      readinessMissing.push("verifier registry");
+    }
+  }
+  if (readinessMissing.length > 0) {
+    warnings.push(finding(
+      "PROJECT_NOT_READY",
+      "project integrity is valid but implementation tasks still need project-owned control inputs",
+      { missing: [...new Set(readinessMissing)].sort() },
+    ));
   }
 
   if (lock) {

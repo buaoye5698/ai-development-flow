@@ -16,7 +16,7 @@ ai-flow doctor <directory>
 ai-flow upgrade-check <directory>
 ```
 
-`init` 只接受不存在的目录。`adopt` 默认只输出计划；`--apply` 也只补缺失文件，任何冲突都整体拒绝。`upgrade-check` 只报告框架锁、Schema 和 managed distribution 漂移，不自动改写项目真相或历史证据。
+`init` 只接受不存在的目录。`adopt` 默认只输出计划；`--apply` 也只补缺失文件，任何冲突都整体拒绝。普通 starter 保持 draft，`doctor` 会在项目结构有效但尚缺 active baseline、authorized stage gate、impact map rules 或 verifiers 时返回 `PROJECT_NOT_READY` 清单。`upgrade-check` 只报告框架锁、Schema 和 managed distribution 漂移，不自动改写项目真相或历史证据。
 
 ## 准备 Active Truth 与 Active Control
 
@@ -55,11 +55,21 @@ ai-flow check --project <directory>
 ai-flow start --project <directory> --input <request.json> --mode auto --json
 ```
 
-`start` 会读取当前完整 HEAD，自动生成 task ID、run ID 与 UTC 时间；只有一个兼容 stage gate 时还会自动选择 stage。它随后调用既有 `task compile` 生成完整 TaskPacket，再调用既有 controller 准备隔离 worktree、ContextManifest 和 brief。未显式传入 `--worktree` 时使用系统临时目录下的新路径；多于一个兼容 stage 时必须在请求中提供 `stageId`。
+`start` 会读取当前完整 HEAD，自动生成 task ID 与 UTC 时间；只有一个兼容 stage gate 时还会自动选择 stage。它随后调用既有 `task compile` 生成完整 TaskPacket，并由确定性资格检查选择执行层级。quick 在当前 Git 工作区生成 ContextManifest、Agent/Human Brief 和后续 task-bound verify 命令，不创建 run 或 worktree；full 才生成 run ID 并调用 controller 准备隔离 worktree。多于一个兼容 stage 时必须在请求中提供 `stageId`。
 
-模式触发规则固定如下：用户未指定时，AI 或宿主使用 `--mode auto`；用户明确说“快速处理”时使用 `quick`，明确要求完整流程时使用 `full`。`auto` 和 `quick` 都不是绕过安全链路的授权：只有已授权阶段中、无未决阻断、低风险、无副作用与外部权威、只使用仓库读写能力、只写 managed implementation、采用 quick verifier tier 且最高要求为 contract 证据的 implementation 才会得到 `selectedMode: "quick"`；否则返回 `selectedMode: "full"` 与原因。显式 `full` 始终选择完整流程。
+模式触发规则固定如下：用户未指定时，AI 或宿主使用 `--mode auto`；用户明确说“快速处理”时使用 `quick`，明确要求完整流程时使用 `full`。只有已授权阶段中、无未决阻断、低风险、无副作用与外部权威、只使用仓库读写能力、只写 managed implementation、采用 quick verifier tier 且最高要求为 contract 证据的 implementation 才会得到 `selectedMode: "quick"`；否则返回 `selectedMode: "full"` 与原因。显式 `full`、`--worktree` 或 `--authorization` 始终选择完整流程。
 
-这个入口只完成任务编译和运行准备，不自行启动 AI、验证、审查或封存。执行宿主继续消费返回的 envelope 与 runDigest，并沿用同一 controller 闭环。
+这个入口不自行启动 AI。quick 返回 `executionKind: "in_place"`、brief 和 task-bound verify 命令；验证通过只表示本地任务验证完成，不生成独立审查、EvidenceBundle 或 `accepted` 状态。full 返回 `executionKind: "isolated_run"`、controller envelope 与 runDigest，并沿用完整闭环。
+
+## quick 当前工作区路径
+
+quick 只生成必要的 SpecIndex、TaskPacket、ContextManifest 和 brief；task-bound verify 另外写入忽略跟踪的验证结果。Codex 根据 Agent Brief 在当前工作区实施后，执行 `start` 返回的命令；task-bound verify 未显式给出 `--tier` 时直接采用 TaskPacket 的 tier：
+
+```text
+ai-flow verify --project <directory> --task <task-id-or-path> --expected-task-digest <sha256:...> --json
+```
+
+验证器运行前会从 base revision 加载 Active Control，并按真实 Git diff 复核 scope、资产分类与 impact；任何越界或需求、验收、verifier 扩张都会阻断。quick 不产生 RunRecord、ReviewReport、AuthorityReceipt 或 EvidenceBundle，也不宣称变更已经在外部目标激活。
 
 ## 编译 TaskPacket
 
@@ -91,7 +101,7 @@ ai-flow context render --project <directory> --task <task-id-or-path> --context 
 
 Agent Brief 与 Human Brief 从同一 TaskPacket/ContextManifest 确定性渲染。前者显式展示任务约束和完整执行边界，后者只保留便于协作的摘要；两者都不是第二套真相源。用户级 Experience Skill 提供的 Historical reminders 只是并列提醒，不写回 TaskPacket 或 ContextManifest。敏感路径只留下引用，不装载内容。
 
-## 启动隔离运行
+## full 启动隔离运行
 
 调用者必须明确给出一个尚不存在的绝对 worktree 路径和 UTC 时间：
 
@@ -130,7 +140,7 @@ ai-flow run abandon --project <directory> --run <run-id> --expected-run-digest <
 
 `resume` 只有在 task、base、control、worktree identity 和 checkpoint content 全部一致时恢复。若 controller 在 accepted/escalated RunRecord 落盘后、writer lock 删除前中断，对同一 terminal run 再次调用 `resume` 会安全且幂等地回收遗留锁。`abandon` 只把该 run 标为 escalated 并释放锁，保留 worktree、分支和用户内容供人工处理。
 
-## 验证、审查与 EvidenceBundle
+## full 验证、审查与 EvidenceBundle
 
 ```text
 ai-flow verify --project <directory> --tier <quick|deep> --run <run-id>
@@ -142,7 +152,7 @@ ai-flow evidence seal --project <directory> --input <evidence-input.json>
 ai-flow evidence status --project <directory> --bundle <bundle-path>
 ```
 
-普通闭环在 verifying 阶段用 `verify --run` 生成绑定结果，推进 reviewing 并完成一次独立审查后，调用 `run finalize`。`finalize-request.json` 提供 bundle ID、UTC 时间、原因、恰好一份独立审查报告，以及任务要求的 authority receipts；该命令在一次调用中依次执行受控 EvidenceBundle 封存和受控 run 推进，两步分别受锁，并非单次原子提交。宿主不再需要手工串联 seal 与 sealed advance。
+full 闭环在 verifying 阶段用 `verify --run` 生成绑定结果，推进 reviewing 并完成一次独立审查后，调用 `run finalize`。`finalize-request.json` 提供 bundle ID、UTC 时间、原因、恰好一份独立审查报告，以及任务要求的 authority receipts；该命令在一次调用中依次执行受控 EvidenceBundle 封存和受控 run 推进，两步分别受锁，并非单次原子提交。宿主不再需要手工串联 seal 与 sealed advance。
 
 `cycle evaluate` 和 `evidence seal` 是诊断或集成需要的较低层入口，不是普通宿主流程的必经步骤，也不是可自由拼装任务状态的无状态入口。`cycle-input.json` 至少提供 `run`、`expectedRunDigest` 和 UTC `at`；`evidence-input.json` 至少提供 `bundleId`、`run`、`expectedRunDigest`、UTC `createdAt` 和 `reviewReports`。TaskPacket、ContextManifest、VerificationResult 集合和 `changedPaths` 分别从 RunRecord 的绑定引用及其隔离 worktree 重新装载或计算，输入文件不能覆盖它们。两条命令都会核对当前 run 的单写者所有权、取得操作锁，并校验 compare-and-swap 摘要和 checkpoint 后再裁判。
 

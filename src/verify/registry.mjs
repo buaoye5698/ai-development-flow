@@ -18,6 +18,7 @@ import {
 } from "./git-scope.mjs";
 
 export const VERIFIER_REGISTRY_PATH = "ai-dev/verifiers/registry.json";
+export const IMPACT_MAP_PATH = "ai-dev/impact-map.json";
 
 function schemaFindings(label, errors) {
   return errors.map((entry) => ({
@@ -149,6 +150,7 @@ export async function loadVerificationPlan({
   let baselineLoad;
   let registryLoad;
   let decisionLoad;
+  let impactLoad;
   try {
     configLoad = await loadAndValidateAtRevision(projectRoot, activeRevision, "ai-flow.config.json", "project-config", "project config");
     errors.push(...configLoad.errors);
@@ -158,6 +160,8 @@ export async function loadVerificationPlan({
     const decisionPath = baselineLoad.value?.decisionRegister ?? "ai-dev/decisions/register.json";
     decisionLoad = await loadAndValidateAtRevision(projectRoot, activeRevision, decisionPath, "decision-register", "decision register");
     errors.push(...decisionLoad.errors);
+    impactLoad = await loadAndValidateAtRevision(projectRoot, activeRevision, IMPACT_MAP_PATH, "impact-map", "impact map");
+    errors.push(...impactLoad.errors);
     registryLoad = await loadAndValidateAtRevision(projectRoot, activeRevision, VERIFIER_REGISTRY_PATH, "verifier-registry", "verifier registry");
     errors.push(...registryLoad.errors);
     if (task) {
@@ -174,7 +178,11 @@ export async function loadVerificationPlan({
   const config = configLoad.value;
   const baseline = baselineLoad.value;
   const decisionRegister = decisionLoad.value;
+  const impactMap = impactLoad.value;
   const registry = registryLoad.value;
+  if (impactMap.baselineId !== baseline.baselineId) {
+    errors.push({ code: "IMPACT_BASELINE_MISMATCH", message: "impact map belongs to a different baseline" });
+  }
   const semantic = validateRegistrySemantics(registry);
   errors.push(...semantic.errors);
 
@@ -184,6 +192,7 @@ export async function loadVerificationPlan({
       errors,
       config,
       baseline,
+      impactMap,
       registry,
       decisionRegister,
       task: null,
@@ -201,6 +210,7 @@ export async function loadVerificationPlan({
       errors,
       config,
       baseline,
+      impactMap,
       registry,
       task,
       taskPath,
@@ -260,6 +270,14 @@ export async function loadVerificationPlan({
     }
   }
 
+  const executedTier = tier ?? task?.verification?.tier ?? null;
+  if (!new Set(["quick", "deep"]).has(executedTier)) {
+    errors.push({
+      code: "VERIFICATION_TIER_REQUIRED",
+      message: "verification tier must be quick or deep; task-bound verification may derive it from the TaskPacket",
+    });
+  }
+
   const requestedIds = new Set(
     task ? task.verification?.verifierIds ?? [] : (registry.verifiers ?? []).map((entry) => entry.verifierId),
   );
@@ -310,11 +328,11 @@ export async function loadVerificationPlan({
 
   const selected = [];
   const deferredVerifierIds = [];
-  const requiredTier = task?.verification?.tier ?? tier;
+  const requiredTier = task?.verification?.tier ?? executedTier;
   for (const verifierId of requestedIds) {
     const verifier = semantic.byId.get(verifierId);
     if (!verifier) continue;
-    if (tier === "quick" && verifier.tier === "deep") {
+    if (executedTier === "quick" && verifier.tier === "deep") {
       deferredVerifierIds.push(verifierId);
       continue;
     }
@@ -342,7 +360,7 @@ export async function loadVerificationPlan({
   }
   selected.sort((left, right) => left.verifierId.localeCompare(right.verifierId, "en"));
   deferredVerifierIds.sort((left, right) => left.localeCompare(right, "en"));
-  if (selected.length === 0 && !(tier === "quick" && requiredTier === "deep" && deferredVerifierIds.length > 0)) {
+  if (selected.length === 0 && !(executedTier === "quick" && requiredTier === "deep" && deferredVerifierIds.length > 0)) {
     errors.push({ code: "NO_VERIFIERS_SELECTED", message: "no registered verifier is eligible for the selected tier" });
   }
 
@@ -351,13 +369,14 @@ export async function loadVerificationPlan({
     errors,
     config,
     baseline,
-      registry,
-      decisionRegister,
+    impactMap,
+    registry,
+    decisionRegister,
     task,
     taskPath,
     specDigest,
     requiredTier,
-    executedTier: tier,
+    executedTier,
     selected,
     deferredVerifierIds,
     activeControlRevision: activeRevision,

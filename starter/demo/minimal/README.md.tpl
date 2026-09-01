@@ -10,4 +10,4 @@ git -c user.name="AI Flow Demo" -c user.email="demo@example.invalid" commit -m "
 node tools/ai-flow/bin/ai-flow.mjs start --project . --input demo-task.json --mode auto --json
 ```
 
-最后一条命令会生成完整 TaskPacket，并在系统临时目录准备隔离 worktree。demo 的 baseline、stage、impact map 和 verifier 已配置为可运行状态。
+最后一条命令会生成完整 TaskPacket 与 Agent Brief，并选择当前工作区的 quick 路径；返回的 task-bound verify 命令用于完成本地验证。demo 的 baseline、stage、impact map 和 verifier 已配置为可运行状态。

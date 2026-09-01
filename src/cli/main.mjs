@@ -54,7 +54,7 @@ const HELP = `Usage:
   ai-flow run finalize --project <directory> --run <id> --expected-run-digest <sha256:...> --input <path> [--json]
   ai-flow run abandon --project <directory> --run <id> --expected-run-digest <sha256:...> --at <UTC-time> --reason <text> [--json]
   ai-flow review validate --project <directory> --review <id-or-path> [--json]
-  ai-flow verify --project <directory> --tier <quick|deep> [--run <id> | --task <id-or-path> --expected-task-digest <sha256:...>] [--json]
+  ai-flow verify --project <directory> [--tier <quick|deep>] [--run <id> | --task <id-or-path> --expected-task-digest <sha256:...>] [--json]
   ai-flow cycle evaluate --project <directory> --input <path> [--json]
   ai-flow evidence seal --project <directory> --input <path> [--out <path>] [--dry-run] [--json]
   ai-flow evidence status --project <directory> --bundle <path> [--json]
@@ -312,8 +312,11 @@ const COMMANDS = Object.freeze([
     required: ["--project"],
     requiredMessage: "verify requires --project",
     validate: ({ options }) => {
-      if (!new Set(["quick", "deep"]).has(options["--tier"])) {
-        throw usageError("verify requires --tier quick or --tier deep");
+      if (options["--tier"] !== undefined && !new Set(["quick", "deep"]).has(options["--tier"])) {
+        throw usageError("verify --tier must be quick or deep");
+      }
+      if (!options["--task"] && options["--tier"] === undefined) {
+        throw usageError("verify requires --tier unless --task supplies the TaskPacket tier");
       }
       if (options["--run"] && (options["--task"] || options["--expected-task-digest"])) {
         throw usageError("verify --run cannot be combined with --task or --expected-task-digest");
