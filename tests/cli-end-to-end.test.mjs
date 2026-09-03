@@ -145,7 +145,6 @@ test("start turns a three-field local request into in-place quick execution and 
   const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), "ai-flow-start-e2e-"));
   const projectRoot = path.join(fixtureRoot, "project");
   const specPath = path.join(fixtureRoot, "spec.md");
-  const fullWorktreePath = path.join(fixtureRoot, "full-worktree");
   t.after(async () => rm(fixtureRoot, { recursive: true, force: true }));
   await writeFile(specPath, SPEC, "utf8");
 
@@ -272,16 +271,22 @@ test("start turns a three-field local request into in-place quick execution and 
   const full = await executeCli(vendoredCli, [
     "start", "--project", projectRoot,
     "--input", shortRequest,
-    "--mode", "auto",
-    "--worktree", fullWorktreePath,
+    "--mode", "full",
     "--json",
   ]);
   assert.equal(full.code, 0, full.stderr || full.stdout);
   assert.equal(full.value.selectedMode, "full");
   assert.equal(full.value.executionKind, "isolated_run");
   assert.equal(full.value.quickEligible, true);
-  assert.equal(full.value.routingReasons[0].code, "FULL_RUN_OPTION_REQUESTED");
+  assert.equal(full.value.routingReasons[0].code, "FULL_MODE_REQUESTED");
   assert.equal(full.value.runRecord.state, "ready");
+  const fullWorktreePath = path.join(
+    projectRoot,
+    "temp",
+    "worktrees",
+    `quick-example-${full.value.runId}`,
+  );
+  assert.equal(path.resolve(full.value.worktreePath), path.resolve(fullWorktreePath));
   await readFile(path.join(fullWorktreePath, "AGENTS.md"), "utf8");
 
   const abandonedAt = new Date(Date.parse(full.value.runRecord.startedAt) + 1_000).toISOString();
@@ -294,6 +299,12 @@ test("start turns a three-field local request into in-place quick execution and 
     "--json",
   ]);
   assert.equal(abandoned.code, 0, abandoned.stderr || abandoned.stdout);
+  assert.equal(abandoned.value.worktreeCleanup.status, "removed");
+  await assert.rejects(readFile(path.join(fullWorktreePath, "AGENTS.md"), "utf8"));
+  assert.equal(
+    await git(projectRoot, ["rev-parse", "--verify", `${abandoned.value.worktreeCleanup.snapshotRef}^{commit}`]),
+    abandoned.value.worktreeCleanup.snapshotRevision,
+  );
 });
 
 test("an initialized project actually runs vendored spec, task, context, cycle, check, and metrics commands", async (t) => {
@@ -1147,10 +1158,17 @@ test("vendored CLI binds machine evidence and review to Owner then production re
   assert.equal(runRecord.state, "accepted");
   assert.equal(runRecord.result.evidenceBundleRef, sealed.value.outputPath);
   assert.equal(runRecord.result.acceptedEvidenceLevel, "production");
+  assert.equal(finalized.value.worktreeCleanup.status, "removed");
+  await assert.rejects(readFile(path.join(worktreePath, "src", "app.mjs"), "utf8"));
+  assert.equal(
+    await git(projectRoot, ["rev-parse", "--verify", `${finalized.value.worktreeCleanup.snapshotRef}^{commit}`]),
+    finalized.value.worktreeCleanup.snapshotRevision,
+  );
   const acceptedInspection = await executeCli(vendoredCli, [
     "run", "inspect", "--project", projectRoot, "--run", "RUN-EVIDENCE", "--json",
   ]);
   assert.equal(acceptedInspection.code, 0, acceptedInspection.stderr || acceptedInspection.stdout);
+  assert.equal(acceptedInspection.value.worktreeCleanup.status, "removed");
   assert.equal(acceptedInspection.value.nextAction.kind, "none");
   assert.equal(acceptedInspection.value.nextAction.terminalState, "accepted");
 
@@ -1185,17 +1203,6 @@ test("vendored CLI binds machine evidence and review to Owner then production re
   assert.equal(status.code, 0, status.stderr || status.stdout);
   assert.equal(status.value.fresh, true);
   await writeFile(path.join(projectRoot, "src", "app.mjs"), implementedSource, "utf8");
-
-  await writeFile(path.join(worktreePath, "src", "app.mjs"), "export const value = 3;\n", "utf8");
-  status = await evidenceStatus();
-  assert.equal(status.code, 2);
-  assert.equal(status.value.code, "RUN_BINDING_STALE");
-  assert.equal(status.value.errors.some(
-    (entry) => entry.code === "RUN_CHECKPOINT_STALE" || entry.code === "RUN_CONTENT_STALE",
-  ), true);
-  await writeFile(path.join(worktreePath, "src", "app.mjs"), implementedSource, "utf8");
-  status = await evidenceStatus();
-  assert.equal(status.code, 0, status.stderr || status.stdout);
 
   const changedRegistry = structuredClone(registry);
   changedRegistry.verifiers[0].timeoutMs = 6_000;
@@ -1286,8 +1293,6 @@ test("vendored CLI binds machine evidence and review to Owner then production re
   status = await evidenceStatus();
   assert.equal(status.code, 0, status.stderr || status.stdout);
 
-  await git(worktreePath, ["add", "src/app.mjs"]);
-  await git(worktreePath, ["commit", "-m", "commit unchanged candidate content"]);
   status = await evidenceStatus();
   assert.equal(status.code, 0);
   assert.equal(status.value.fresh, true);

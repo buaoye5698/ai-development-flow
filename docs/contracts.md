@@ -81,9 +81,9 @@ quick `start` 在当前 Git 工作区生成 TaskPacket、ContextManifest、Agent
 
 ## full 控制器与恢复
 
-`prepare` 原子获取单写者锁，在全新绝对路径创建 detached isolated worktree，固定 task/base/control/worktree identity/content 并生成 RunRecord、ContextManifest 和 execution envelope。RunRecord 只能由 controller 的 `prepare` 创建并绑定该隔离 worktree；调用者构造的记录、当前 checkout、项目根目录或既有目录不能成为运行主体。
+full `start` 默认在项目 `temp/worktrees/` 下生成全新路径；直接调用 `prepare` 时使用明确给出的全新绝对路径。`prepare` 原子获取单写者锁并创建 detached isolated worktree，固定 task/base/control/worktree identity/content，生成 RunRecord、ContextManifest 和 execution envelope。RunRecord 只能由 controller 的 `prepare` 创建并绑定该隔离 worktree；调用者构造的记录、当前 checkout、项目根目录或既有目录不能成为运行主体。
 
-`advance` 以 `expectedRunDigest` compare-and-swap，在实现、验证、审查、返修和封存边界重查 scope、actual impact、subject content、Active Control、基准框架分发和授权。`prepare` 与成功 `advance` 都直接返回下一次操作使用的 runDigest，不要求额外 inspect。内容只允许在进入实现或由实现/返修进入验证时更新；controller 会同时重建 ContextManifest 与两种 brief。验证、审查或封存阶段发现内容变化时立即 stale，不能沿用旧结果。`cycle evaluate` 与 `evidence seal` 同样必须绑定 run、最新 `expectedRunDigest` 和显式 UTC 时间；task、context、verification 与 changed paths 从 RunRecord 及其 worktree 推导，外部请求不得替换。`resume` 仅在 task、base、control、框架分发、worktree identity 与 checkpoint content 全部一致时恢复；若进程在 terminal RunRecord 落盘后、释放 writer lock 前中断，`resume` 会幂等回收该精确 terminal run 的锁。`abandon` 只标记精确 run 为 escalated 并释放锁，不删除现场。
+`advance` 以 `expectedRunDigest` compare-and-swap，在实现、验证、审查、返修和封存边界重查 scope、actual impact、subject content、Active Control、基准框架分发和授权。`prepare` 与成功 `advance` 都直接返回下一次操作使用的 runDigest，不要求额外 inspect。内容只允许在进入实现或由实现/返修进入验证时更新；controller 会同时重建 ContextManifest 与两种 brief。验证、审查或封存阶段发现内容变化时立即 stale，不能沿用旧结果。`cycle evaluate` 与 `evidence seal` 同样必须绑定 run、最新 `expectedRunDigest` 和显式 UTC 时间；task、context、verification 与 changed paths 从 RunRecord 及其 worktree 推导，外部请求不得替换。`resume` 仅在 task、base、control、框架分发、worktree identity 与 checkpoint content 全部一致时恢复。accepted 或 escalated 终态先创建本地 Git 恢复引用，再注销并移除临时 worktree；进程中断或清理失败时，`resume` 会幂等重试清理并回收该 run 的遗留锁。
 
 `advance` 的 `sealed` 阶段只有在引用的 EvidenceBundle 通过当前 Schema、canonical digest，以及 run/task/control/subject/activation/evidence/review/verification/exclusions 的精确绑定校验后，才可把 RunRecord 转为 `accepted`。
 

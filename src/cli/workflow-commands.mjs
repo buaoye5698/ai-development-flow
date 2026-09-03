@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
 
 import { digestJson } from "../core/index.mjs";
@@ -5,6 +7,7 @@ import { aggregateRunMetrics, deriveRunMetrics } from "../metrics/index.mjs";
 import { analyzeImpact } from "../task/impact-analysis.mjs";
 import { advanceRun, inspectRun, validateBaseControlBinding, withBoundRunOperation } from "../controller/index.mjs";
 import { digestDeclaredInputs } from "../verify/cache.mjs";
+import { runProcess } from "../verify/process-runner.mjs";
 import {
   adjudicateWorkflowCycle,
   compareVerificationBindingSet,
@@ -39,6 +42,62 @@ import {
   reviewSemanticErrors,
 } from "./project-runtime.mjs";
 import { normalizeRepoPath, validateRelativePath } from "./path-safety.mjs";
+
+async function runGit(cwd, args) {
+  return runProcess({
+    command: "git",
+    args,
+    cwd,
+    timeoutMs: 30_000,
+    outputLimitBytes: 16 * 1024 * 1024,
+  });
+}
+
+async function removeEvidenceWorktree(projectRoot, target) {
+  const removed = await runGit(projectRoot, ["worktree", "remove", "--force", target]);
+  if (removed.exitCode !== 0) {
+    operationError(
+      "EVIDENCE_TEMP_WORKTREE_CLEANUP_FAILED",
+      "evidence status could not remove its temporary recovery worktree",
+      { path: target, detail: removed.stderr.trim() || removed.error },
+    );
+  }
+}
+
+async function withEvidenceSubject(ctx, runRecord, controllerInspection, action) {
+  const cleanup = controllerInspection.worktreeCleanup;
+  if (!controllerInspection.terminal || cleanup?.status === "pending") {
+    return action(runRecord.workspace.identifier);
+  }
+  if (!cleanup?.snapshotRevision || !/^[a-f0-9]{40,64}$/u.test(cleanup.snapshotRevision)) {
+    operationError("RUN_RECOVERY_REF_MISSING", "terminal evidence status requires a valid recovery snapshot", {
+      snapshotRef: cleanup?.snapshotRef ?? null,
+    });
+  }
+  const target = path.join(
+    ctx.projectRoot,
+    "temp",
+    "worktrees",
+    `.evidence-${runRecord.runId}-${randomUUID()}`,
+  );
+  await mkdir(path.dirname(target), { recursive: true });
+  const added = await runGit(ctx.projectRoot, [
+    "worktree", "add", "--detach", target, cleanup.snapshotRevision,
+  ]);
+  if (added.exitCode !== 0) {
+    const cleanupAttempt = await runGit(ctx.projectRoot, ["worktree", "remove", "--force", target]);
+    operationError("EVIDENCE_TEMP_WORKTREE_CREATE_FAILED", "evidence status could not materialize the recovery snapshot", {
+      path: target,
+      detail: added.stderr.trim() || added.error,
+      cleanupDetail: cleanupAttempt.exitCode === 0 ? null : (cleanupAttempt.stderr.trim() || cleanupAttempt.error),
+    });
+  }
+  try {
+    return await action(target);
+  } finally {
+    await removeEvidenceWorktree(ctx.projectRoot, target);
+  }
+}
 
 function uniqueStrings(values, label) {
   if (!Array.isArray(values) || values.some((entry) => typeof entry !== "string" || entry.length === 0)) {
@@ -364,6 +423,7 @@ export function finalizeRunCommand({ project, runId, expectedRunDigest, input })
       runDigest: advanced.runDigest,
       runRecord: advanced.runRecord,
       envelope: advanced.envelope,
+      worktreeCleanup: advanced.worktreeCleanup,
       warnings: sealed.warnings,
       errors: [],
     };
@@ -388,7 +448,7 @@ export function evidenceStatusCommand({ project, bundle }) {
     const { value: taskPacket } = taskLoaded;
     const controllerInspection = await inspectRun({ project, runId: runRecord.runId });
     if (controllerInspection.status !== "pass") {
-      operationError("RUN_BINDING_STALE", "evidence status requires the exact controller-bound worktree", {
+      operationError("RUN_BINDING_STALE", "evidence status requires the exact controller-bound subject", {
         errors: controllerInspection.errors,
       });
     }
@@ -407,63 +467,64 @@ export function evidenceStatusCommand({ project, bundle }) {
         errors: baseControl.errors,
       });
     }
-    const subjectRoot = runRecord.workspace.identifier;
-    const verifierById = new Map(
-      baseControl.active.verifierRegistry.verifiers.map((entry) => [entry.verifierId, entry]),
-    );
-    const currentDigests = { verifierDefinitionDigests: {}, verifierInputDigests: {} };
-    for (const verifierId of results.map((entry) => entry.result.verifierId)) {
-      const verifier = verifierById.get(verifierId);
-      if (!verifier) operationError("VERIFIER_UNKNOWN", "base Active Control no longer contains the evidence verifier", { verifierId });
-      currentDigests.verifierDefinitionDigests[verifierId] = digestJson(verifier);
-      currentDigests.verifierInputDigests[verifierId] = (await digestDeclaredInputs({
-        projectRoot: subjectRoot,
-        verifier,
-        excludedPaths: frameworkProcessArtifactPrefixes(baseControl.active.config),
-      })).digest;
-    }
-    const git = await inspectGitRepository(subjectRoot);
-    if (!git.ok) {
-      operationError("EVIDENCE_GIT_REQUIRED", "evidence freshness requires the current Git worktree", {
-        errors: git.errors,
+    return withEvidenceSubject(ctx, runRecord, controllerInspection, async (subjectRoot) => {
+      const verifierById = new Map(
+        baseControl.active.verifierRegistry.verifiers.map((entry) => [entry.verifierId, entry]),
+      );
+      const currentDigests = { verifierDefinitionDigests: {}, verifierInputDigests: {} };
+      for (const verifierId of results.map((entry) => entry.result.verifierId)) {
+        const verifier = verifierById.get(verifierId);
+        if (!verifier) operationError("VERIFIER_UNKNOWN", "base Active Control no longer contains the evidence verifier", { verifierId });
+        currentDigests.verifierDefinitionDigests[verifierId] = digestJson(verifier);
+        currentDigests.verifierInputDigests[verifierId] = (await digestDeclaredInputs({
+          projectRoot: subjectRoot,
+          verifier,
+          excludedPaths: frameworkProcessArtifactPrefixes(baseControl.active.config),
+        })).digest;
+      }
+      const git = await inspectGitRepository(subjectRoot);
+      if (!git.ok) {
+        operationError("EVIDENCE_GIT_REQUIRED", "evidence freshness requires the controller-bound Git subject", {
+          errors: git.errors,
+        });
+      }
+      const snapshot = await computeWorktreeSnapshot(subjectRoot, git.headRevision, {
+        excludedPaths: [
+          runLoaded.path,
+          bundlePath,
+          runRecord.contextManifestRef,
+          ...(evidenceBundle.verifierEvidence ?? []).map((entry) => entry.resultRef),
+          ...(evidenceBundle.reviewReportRefs ?? []),
+        ].filter(Boolean),
+        excludedPrefixes: frameworkProcessArtifactPrefixes(baseControl.active.config),
       });
-    }
-    const snapshot = await computeWorktreeSnapshot(subjectRoot, git.headRevision, {
-      excludedPaths: [
-        runLoaded.path,
+      const subjectContent = await computeSubjectContentSnapshot(subjectRoot, runRecord.baseRevision, {
+        excludedPrefixes: frameworkProcessArtifactPrefixes(baseControl.active.config),
+      });
+      const freshness = evaluateSealedEvidenceFreshness(evidenceBundle, {
+        frameworkVersion: ctx.lock.frameworkVersion,
+        baseline: ctx.baseline,
+        taskPacket,
+        subjectRevision: snapshot.subjectRevision,
+        worktreeDigest: snapshot.worktreeDigest,
+        subjectContentDigest: subjectContent.subjectContentDigest,
+        contextManifest,
+        verificationResults: results,
+        reviewReports: reviews,
+        authorityReceipts: receipts,
+        ...currentDigests,
+      });
+      return {
+        status: freshness.fresh ? "pass" : "blocked",
+        code: freshness.fresh ? undefined : "EVIDENCE_STALE",
+        target: ctx.projectRoot,
         bundlePath,
-        runRecord.contextManifestRef,
-        ...(evidenceBundle.verifierEvidence ?? []).map((entry) => entry.resultRef),
-        ...(evidenceBundle.reviewReportRefs ?? []),
-      ].filter(Boolean),
-      excludedPrefixes: frameworkProcessArtifactPrefixes(baseControl.active.config),
+        bundleId: evidenceBundle.bundleId,
+        ...freshness,
+        errors: freshness.reasons,
+        warnings: ctx.warnings,
+      };
     });
-    const subjectContent = await computeSubjectContentSnapshot(subjectRoot, runRecord.baseRevision, {
-      excludedPrefixes: frameworkProcessArtifactPrefixes(baseControl.active.config),
-    });
-    const freshness = evaluateSealedEvidenceFreshness(evidenceBundle, {
-      frameworkVersion: ctx.lock.frameworkVersion,
-      baseline: ctx.baseline,
-      taskPacket,
-      subjectRevision: snapshot.subjectRevision,
-      worktreeDigest: snapshot.worktreeDigest,
-      subjectContentDigest: subjectContent.subjectContentDigest,
-      contextManifest,
-      verificationResults: results,
-      reviewReports: reviews,
-      authorityReceipts: receipts,
-      ...currentDigests,
-    });
-    return {
-      status: freshness.fresh ? "pass" : "blocked",
-      code: freshness.fresh ? undefined : "EVIDENCE_STALE",
-      target: ctx.projectRoot,
-      bundlePath,
-      bundleId: evidenceBundle.bundleId,
-      ...freshness,
-      errors: freshness.reasons,
-      warnings: ctx.warnings,
-    };
   });
 }
 

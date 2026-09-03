@@ -106,8 +106,12 @@ function assertAdvanceRequest(request) {
   }
 }
 
-async function git(cwd, args) {
-  const result = await runProcess({ command: "git", args, cwd, timeoutMs: 30_000, outputLimitBytes: 16 * 1024 * 1024 });
+async function gitResult(cwd, args, env = process.env) {
+  return runProcess({ command: "git", args, cwd, env, timeoutMs: 30_000, outputLimitBytes: 16 * 1024 * 1024 });
+}
+
+async function git(cwd, args, env = process.env) {
+  const result = await gitResult(cwd, args, env);
   if (result.exitCode !== 0) throw controllerError("GIT_COMMAND_FAILED", result.stderr.trim() || result.error || "Git command failed", { result });
   return result.stdout.trim();
 }
@@ -155,13 +159,38 @@ async function validateNewWorktreePath(projectRoot, worktreePath) {
   if (resolved === path.parse(resolved).root) throw controllerError("WORKTREE_PATH_UNSAFE", "worktree cannot be a filesystem root");
   const projectKey = comparable(projectRoot);
   const worktreeKey = comparable(resolved);
-  if (worktreeKey === projectKey || worktreeKey.startsWith(`${projectKey}/`)) {
-    throw controllerError("WORKTREE_PATH_INSIDE_PROJECT", "isolated worktree must be outside the selected project");
+  const managedRoot = path.resolve(projectRoot, "temp", "worktrees");
+  const managedRootKey = comparable(managedRoot);
+  const insideProject = worktreeKey === projectKey || worktreeKey.startsWith(`${projectKey}/`);
+  const insideManagedRoot = worktreeKey.startsWith(`${managedRootKey}/`);
+  if (insideProject && !insideManagedRoot) {
+    throw controllerError(
+      "WORKTREE_PATH_INSIDE_PROJECT",
+      "an in-project isolated worktree must be below temp/worktrees",
+    );
   }
   if (await exists(resolved)) throw controllerError("WORKTREE_PATH_EXISTS", "prepare only accepts a path that does not exist");
   const parent = path.dirname(resolved);
   const stats = await lstat(parent);
   if (!stats.isDirectory() || stats.isSymbolicLink()) throw controllerError("WORKTREE_PARENT_UNSAFE", "worktree parent must be a real directory");
+  if (insideManagedRoot) {
+    const managedStats = await lstat(managedRoot);
+    if (!managedStats.isDirectory() || managedStats.isSymbolicLink()) {
+      throw controllerError("WORKTREE_PARENT_UNSAFE", "temp/worktrees must be a real directory");
+    }
+    const [projectReal, managedReal, parentReal] = await Promise.all([
+      realpath(projectRoot),
+      realpath(managedRoot),
+      realpath(parent),
+    ]);
+    const projectRealKey = comparable(projectReal);
+    const managedRealKey = comparable(managedReal);
+    const parentRealKey = comparable(parentReal);
+    if (!managedRealKey.startsWith(`${projectRealKey}/`)
+      || (parentRealKey !== managedRealKey && !parentRealKey.startsWith(`${managedRealKey}/`))) {
+      throw controllerError("WORKTREE_PARENT_UNSAFE", "temp/worktrees cannot escape the selected project through a link");
+    }
+  }
   return resolved;
 }
 
@@ -319,6 +348,155 @@ async function worktreeIdentity(worktreePath, expectedBase = null) {
   }
   const identity = { path: resolvedPath.replaceAll("\\", "/"), gitDirectory: gitDirectory.replaceAll("\\", "/") };
   return { ...identity, headRevision, worktreeIdentityDigest: digestJson(identity) };
+}
+
+function terminalRecoveryRef(runId) {
+  const slug = runId
+    .toLowerCase()
+    .replaceAll(".", "-")
+    .replace(/-+/gu, "-")
+    .replace(/^[-_]+|[-_]+$/gu, "") || "run";
+  const suffix = digestJson({ runId }).slice("sha256:".length, "sha256:".length + 12);
+  return `refs/ai-flow/runs/${slug}-${suffix}/snapshot`;
+}
+
+async function recoveryRevision(projectRoot, snapshotRef) {
+  const result = await gitResult(projectRoot, ["rev-parse", "--verify", `${snapshotRef}^{commit}`]);
+  return result.exitCode === 0 ? result.stdout.trim() : null;
+}
+
+async function inspectTerminalWorktreeCleanup(projectRoot, runRecord) {
+  const worktreePath = runRecord.workspace.identifier;
+  const snapshotRef = terminalRecoveryRef(runRecord.runId);
+  const [worktreePresent, snapshotRevision] = await Promise.all([
+    exists(worktreePath),
+    recoveryRevision(projectRoot, snapshotRef),
+  ]);
+  return {
+    status: worktreePresent ? "pending" : (snapshotRevision ? "removed" : "missing"),
+    worktreePath,
+    snapshotRef,
+    snapshotRevision,
+  };
+}
+
+async function snapshotTerminalWorktree(ctx, runRecord, identity) {
+  const taskPacket = (await loadTask(ctx, runRecord.taskPacketRef)).value;
+  if (digestJson(taskPacket) !== runRecord.taskPacketDigest) {
+    throw controllerError("RUN_TASK_PACKET_STALE", "terminal cleanup cannot use a changed TaskPacket");
+  }
+  const baseControl = await validateBaseControlBinding(ctx.projectRoot, taskPacket);
+  if (!baseControl.ok) {
+    throw controllerError("RUN_CONTROL_STALE", "terminal cleanup cannot snapshot against stale base control", {
+      errors: baseControl.errors,
+    });
+  }
+  if (taskPacket.controlDigest !== runRecord.controlDigest) {
+    throw controllerError("RUN_CONTROL_STALE", "terminal cleanup control binding differs from the run record");
+  }
+  const scope = await inspectTaskScope({
+    projectRoot: identity.path,
+    baseRevision: runRecord.baseRevision,
+    taskPath: null,
+    allowedPaths: taskPacket.scope.allowedPaths,
+    forbiddenPaths: taskPacket.scope.forbiddenPaths,
+    controlPaths: [],
+    excludedPrefixes: frameworkProcessArtifactPrefixes(baseControl.active.config),
+  });
+  if (!scope.ok) {
+    throw controllerError("RUN_SCOPE_STALE", "terminal cleanup refused out-of-scope candidate content", {
+      errors: scope.errors,
+    });
+  }
+  validateActualImpact(taskPacket, baseControl.active, scope.changedPaths);
+  const indexPath = resolveWithin(ctx.projectRoot, validateRelativePath(path.posix.join(
+    ctx.config.paths.controller,
+    `snapshot-${runRecord.runId}-${randomUUID()}.index`,
+  )));
+  const snapshotEnv = {
+    ...process.env,
+    GIT_INDEX_FILE: indexPath,
+    GIT_AUTHOR_NAME: "AI Flow Controller",
+    GIT_AUTHOR_EMAIL: "ai-flow@localhost",
+    GIT_AUTHOR_DATE: runRecord.updatedAt,
+    GIT_COMMITTER_NAME: "AI Flow Controller",
+    GIT_COMMITTER_EMAIL: "ai-flow@localhost",
+    GIT_COMMITTER_DATE: runRecord.updatedAt,
+  };
+  try {
+    await git(identity.path, ["read-tree", runRecord.baseRevision], snapshotEnv);
+    if (scope.changedPaths.length > 0) {
+      await git(identity.path, ["add", "-A", "--", ...scope.changedPaths], snapshotEnv);
+    }
+    const treeRevision = await git(identity.path, ["write-tree"], snapshotEnv);
+    return git(identity.path, [
+      "commit-tree", treeRevision,
+      "-p", identity.headRevision,
+      "-m", `ai-flow: preserve terminal run ${runRecord.runId}`,
+    ], snapshotEnv);
+  } finally {
+    await rm(indexPath, { force: true });
+  }
+}
+
+async function cleanupTerminalWorktree(ctx, runRecord) {
+  const current = await inspectTerminalWorktreeCleanup(ctx.projectRoot, runRecord);
+  if (current.status === "removed") {
+    return { ...current, status: "already_removed" };
+  }
+  if (current.status === "missing") {
+    throw controllerError(
+      "RUN_RECOVERY_REF_MISSING",
+      "terminal worktree is absent and no recovery snapshot ref exists",
+      { worktreePath: current.worktreePath, snapshotRef: current.snapshotRef },
+    );
+  }
+  const identity = await worktreeIdentity(current.worktreePath, runRecord.baseRevision);
+  if (identity.worktreeIdentityDigest !== runRecord.worktreeIdentityDigest) {
+    throw controllerError(
+      "RUN_WORKTREE_IDENTITY_STALE",
+      "terminal cleanup refused a worktree whose registered identity changed",
+      { expected: runRecord.worktreeIdentityDigest, actual: identity.worktreeIdentityDigest },
+    );
+  }
+  const snapshotRevision = await snapshotTerminalWorktree(ctx, runRecord, identity);
+  await git(ctx.projectRoot, ["update-ref", current.snapshotRef, snapshotRevision]);
+  await git(ctx.projectRoot, ["worktree", "remove", "--force", identity.path]);
+  if (await exists(identity.path)) {
+    throw controllerError("RUN_WORKTREE_REMOVE_INCOMPLETE", "Git left the terminal worktree directory in place", {
+      path: identity.path,
+    });
+  }
+  return {
+    status: "removed",
+    worktreePath: identity.path,
+    snapshotRef: current.snapshotRef,
+    snapshotRevision,
+  };
+}
+
+function terminalCleanupFailure(runRecord, error) {
+  return controllerError(
+    "RUN_WORKTREE_CLEANUP_FAILED",
+    "terminal state was recorded, but worktree cleanup failed; call run resume to retry",
+    {
+      terminalState: runRecord.state,
+      worktreePath: runRecord.workspace.identifier,
+      snapshotRef: terminalRecoveryRef(runRecord.runId),
+      errors: [{
+        code: error.code ?? "RUN_WORKTREE_CLEANUP_ERROR",
+        message: error.message,
+      }],
+    },
+  );
+}
+
+async function completeTerminalCleanup(ctx, runRecord) {
+  try {
+    return await cleanupTerminalWorktree(ctx, runRecord);
+  } catch (error) {
+    throw terminalCleanupFailure(runRecord, error);
+  }
 }
 
 function externalEffectsForTask(taskPacket) {
@@ -710,16 +888,39 @@ export async function prepareRun({ project, task, runId, worktreePath, authoriza
       envelope: executionEnvelope(runRecord, taskPacket, identity),
     };
   } catch (error) {
-    if (!recorded) await releaseWriterLock(ctx.projectRoot, ctx.config, runId).catch(() => {});
-    if (await exists(target)) {
-      error.errors = [
-        ...(error.errors ?? []),
-        {
-          code: "RUN_PREPARE_WORKTREE_PRESERVED",
-          message: "prepare failed after the isolated worktree was created; the worktree was preserved",
-          path: target,
-        },
-      ];
+    if (!recorded) {
+      let cleanupError = null;
+      const targetWasPresent = await exists(target);
+      if (targetWasPresent) {
+        try {
+          await git(ctx.projectRoot, ["worktree", "remove", "--force", target]);
+          if (await exists(target)) {
+            throw controllerError("RUN_WORKTREE_REMOVE_INCOMPLETE", "Git left the failed prepare worktree in place");
+          }
+        } catch (failure) {
+          cleanupError = failure;
+        }
+      }
+      await releaseWriterLock(ctx.projectRoot, ctx.config, runId).catch(() => {});
+      if (cleanupError) {
+        error.errors = [
+          ...(error.errors ?? []),
+          {
+            code: "RUN_PREPARE_WORKTREE_CLEANUP_FAILED",
+            message: cleanupError.message,
+            path: target,
+          },
+        ];
+      } else if (targetWasPresent) {
+        error.errors = [
+          ...(error.errors ?? []),
+          {
+            code: "RUN_PREPARE_WORKTREE_CLEANED",
+            message: "prepare failed after creating a worktree; Git removed it automatically",
+            path: target,
+          },
+        ];
+      }
     }
     throw error;
   }
@@ -797,6 +998,39 @@ function checkpointErrors(runRecord, inspection) {
   return errors;
 }
 
+async function inspectTerminalRun(ctx, runRecord) {
+  const taskPacket = (await loadTask(ctx, runRecord.taskPacketRef)).value;
+  const baseControl = await validateBaseControlBinding(ctx.projectRoot, taskPacket);
+  const errors = preparedCheckpointErrors(runRecord);
+  if (digestJson(taskPacket) !== runRecord.taskPacketDigest) {
+    errors.push({ code: "RUN_TASK_PACKET_STALE", message: "TaskPacket changed after run preparation" });
+  }
+  if (taskPacket.controlDigest !== runRecord.controlDigest || !baseControl.ok) {
+    errors.push({ code: "RUN_CONTROL_STALE", message: "base Active Control binding changed", details: baseControl.errors });
+  }
+  errors.push(...judgeRuntimeBindingErrors(ctx, baseControl.active));
+  const latest = runRecord.checkpoints?.at(-1);
+  for (const [field, expected] of [
+    ["taskPacketDigest", runRecord.taskPacketDigest],
+    ["controlDigest", runRecord.controlDigest],
+    ["subjectContentDigest", runRecord.subjectContentDigest],
+    ["worktreeIdentityDigest", runRecord.worktreeIdentityDigest],
+  ]) {
+    if (latest?.[field] !== expected) {
+      errors.push({
+        code: "RUN_CHECKPOINT_STALE",
+        message: `latest checkpoint ${field} is not bound to the terminal run`,
+        field,
+      });
+    }
+  }
+  return {
+    taskPacket,
+    errors,
+    worktreeCleanup: await inspectTerminalWorktreeCleanup(ctx.projectRoot, runRecord),
+  };
+}
+
 export async function withBoundRunOperation({ project, runId, expectedRunDigest, at }, action) {
   assertRunId(runId);
   if (!DIGEST.test(expectedRunDigest ?? "")) throw controllerError("RUN_DIGEST_INVALID", "expectedRunDigest must be a SHA-256 digest");
@@ -840,9 +1074,28 @@ export async function inspectRun({ project, runId }) {
   assertRunId(runId);
   const ctx = await loadHealthyProject(project);
   const loaded = await loadRunFile(ctx, runId);
+  const runDigest = digestJson(loaded.value);
+  if (["accepted", "escalated"].includes(loaded.value.state)) {
+    const terminalInspection = await inspectTerminalRun(ctx, loaded.value);
+    return {
+      status: terminalInspection.errors.length === 0 ? "pass" : "blocked",
+      runDigest,
+      runRecord: loaded.value,
+      terminal: true,
+      currentSubjectContentDigest: loaded.value.subjectContentDigest,
+      worktreeCleanup: terminalInspection.worktreeCleanup,
+      nextAction: deriveNextAction({
+        projectRoot: ctx.projectRoot,
+        runRecord: loaded.value,
+        taskPacket: terminalInspection.taskPacket,
+        runDigest,
+        errors: terminalInspection.errors,
+      }),
+      errors: terminalInspection.errors,
+    };
+  }
   const inspection = await inspectBoundRun(ctx, loaded.value);
   inspection.errors.push(...checkpointErrors(loaded.value, inspection));
-  const runDigest = digestJson(loaded.value);
   return {
     status: inspection.errors.length === 0 ? "pass" : "blocked",
     runDigest,
@@ -874,15 +1127,16 @@ export async function resumeRun({ project, runId }) {
       if (comparable(owner.worktreePath) !== comparable(loaded.value.workspace.identifier)) {
         throw controllerError("RUN_WRITER_BINDING_STALE", "terminal writer lock is not bound to the run worktree");
       }
-      await recoverOperationLock(ctx.projectRoot, ctx.config, runId);
-      await releaseWriterLock(ctx.projectRoot, ctx.config, runId);
     }
+    await recoverOperationLock(ctx.projectRoot, ctx.config, runId);
+    const worktreeCleanup = await completeTerminalCleanup(ctx, loaded.value);
+    if (owner) await releaseWriterLock(ctx.projectRoot, ctx.config, runId);
     return {
       status: "pass",
       runRecord: loaded.value,
       terminal: true,
       writerLockReleased: owner !== null,
-      worktreePreservedAt: loaded.value.workspace.identifier,
+      worktreeCleanup,
       nextAction: deriveNextAction({
         projectRoot: ctx.projectRoot,
         runRecord: loaded.value,
@@ -1309,12 +1563,17 @@ export async function advanceRun({ project, runId, expectedRunDigest, request })
     }
     await assertProjectSchema(ctx.projectRoot, "run-record", "run record", next);
     await atomicReplaceJson(loaded.absolutePath, next);
-    if (next.state === "accepted") await releaseWriterLock(ctx.projectRoot, ctx.config, runId);
+    let worktreeCleanup = null;
+    if (next.state === "accepted") {
+      worktreeCleanup = await completeTerminalCleanup(ctx, next);
+      await releaseWriterLock(ctx.projectRoot, ctx.config, runId);
+    }
     return {
       status: "pass",
       runDigest: digestJson(next),
       runRecord: next,
       envelope: executionEnvelope(next, inspection.taskPacket, inspection.identity),
+      ...(worktreeCleanup ? { worktreeCleanup } : {}),
     };
   });
 }
@@ -1341,7 +1600,8 @@ export async function abandonRun({ project, runId, expectedRunDigest, at, reason
     ));
     await assertProjectSchema(ctx.projectRoot, "run-record", "run record", next);
     await atomicReplaceJson(loaded.absolutePath, next);
+    const worktreeCleanup = await completeTerminalCleanup(ctx, next);
     await releaseWriterLock(ctx.projectRoot, ctx.config, runId);
-    return { status: "pass", runRecord: next, worktreePreservedAt: loaded.value.workspace.identifier, runDigest: digestJson(next) };
+    return { status: "pass", runRecord: next, worktreeCleanup, runDigest: digestJson(next) };
   });
 }

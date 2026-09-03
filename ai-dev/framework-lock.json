@@ -3,7 +3,7 @@
   "frameworkName": "ai-development-flow",
   "frameworkVersion": "1.0.0",
   "installMode": "vendored",
-  "distributionDigest": "sha256:590ac06566b0b6c9333b4e0db3ee9c968593b376a506d405ea79b8a9d44a1ce5",
+  "distributionDigest": "sha256:ae17c92679259e52d3dc2e9dfe4cf5c9ca5e752dbf0554480a83f99cf81335f8",
   "managedFiles": [
     {
       "path": "bin/ai-flow.mjs",
@@ -187,7 +187,7 @@
     },
     {
       "path": "src/cli/start-command.mjs",
-      "digest": "sha256:75da654ad7244209ae316ac5dc80cf01cb9f14d00179f74452393983d1cb43fc",
+        "digest": "sha256:6c51eb0eeee906e010f8633624efc003dd171b5139df5fce3639015f1aaa659b",
       "ownership": "framework",
       "source": "src/cli/start-command.mjs"
     },
@@ -205,7 +205,7 @@
     },
     {
       "path": "src/cli/workflow-commands.mjs",
-      "digest": "sha256:4196a301c6a3e0e9a4c1a4e12793af7279b15df16253a2a866bef8cfa9131a57",
+        "digest": "sha256:9c2f1e8c8025175615fc08d2e333ccd4a7513bc9980e12eea60af3021ab4abbe",
       "ownership": "framework",
       "source": "src/cli/workflow-commands.mjs"
     },
@@ -235,7 +235,7 @@
     },
     {
       "path": "src/controller/run-controller.mjs",
-      "digest": "sha256:397e4aa8d6434224764e4ae94a639b36d0ddbb4db61f3e4a39f7bad918650c50",
+        "digest": "sha256:8ecf4e36df1058f3eee3aad49ef1a49e6a7b8ebfff608562dd36b4f34ebd2d1f",
       "ownership": "framework",
       "source": "src/controller/run-controller.mjs"
     },
@@ -319,7 +319,7 @@
     },
     {
       "path": "src/task/context-renderer.mjs",
-      "digest": "sha256:c6ced29a1b0932b99583abb6d222f831e842f3753b9e6639cbefb32688004710",
+      "digest": "sha256:0eda390f546c944828ddbd5850c393f3b546d1711a69b5c275257602699f44c3",
       "ownership": "framework",
       "source": "src/task/context-renderer.mjs"
     },
@@ -421,7 +421,7 @@
     },
     {
       "path": "src/workflow/review-coverage.mjs",
-      "digest": "sha256:77b5994f4891ecec9267c0a81d620553afbe4e52f9e5c200b3444d39f877f507",
+      "digest": "sha256:27d6aabf4088f0c10550fb02aac2d08407c856f45deddbb4eb3f002c6b51fe7c",
       "ownership": "framework",
       "source": "src/workflow/review-coverage.mjs"
     },
@@ -511,13 +511,13 @@
     },
     {
       "path": "starter/project/.gitignore.tpl",
-      "digest": "sha256:ae68612bee9d861561a3b0b8717ea13b262d3b97eb6aa07cc9ea7ef9df863d08",
+        "digest": "sha256:8e1d76b11509a28b6a5862e6305a742e0ccfc560453613d3d4ccec3b5ca64b23",
       "ownership": "framework",
       "source": "starter/project/.gitignore.tpl"
     },
     {
       "path": "starter/project/AGENTS.md.tpl",
-      "digest": "sha256:c08903d4c14efc8a9038a1fc7f210a167dc71a68f59907318314ef5fc5c917fc",
+        "digest": "sha256:68500def361f7d0985b6cbd84604862bb15dec7e4e2bcacfa630f83f886e6bd7",
       "ownership": "framework",
       "source": "starter/project/AGENTS.md.tpl"
     },

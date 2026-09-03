@@ -3,7 +3,10 @@ export function validateReviewCoverage(report, taskPacket) {
   if (taskPacket?.review?.profileId && report?.profileId !== taskPacket.review.profileId) {
     errors.push({ code: "REVIEW_PROFILE_MISMATCH", message: "review profile differs from the TaskPacket", expected: taskPacket.review.profileId, actual: report?.profileId ?? null });
   }
-  const mandatory = taskPacket?.review?.mandatoryLensIds ?? [];
+  const required = [...new Set([
+    ...(taskPacket?.review?.mandatoryLensIds ?? []),
+    ...(taskPacket?.review?.requestedLensIds ?? []),
+  ])];
   const coverage = report?.lensCoverage ?? [];
   const byLens = new Map();
   for (const entry of coverage) {
@@ -17,10 +20,10 @@ export function validateReviewCoverage(report, taskPacket) {
     ...(taskPacket?.decisionDependencies ?? []).map((entry) => entry.decisionId),
     ...(taskPacket?.derivation?.blockingDecisionIds ?? []),
   ]);
-  for (const lensId of mandatory) {
+  for (const lensId of required) {
     const entry = byLens.get(lensId);
     if (!entry) {
-      errors.push({ code: "REVIEW_LENS_MISSING", message: "mandatory review lens is missing", lensId });
+      errors.push({ code: "REVIEW_LENS_MISSING", message: "required review lens is missing", lensId });
       continue;
     }
     const justifiedNotApplicable = entry.status === "not_applicable"

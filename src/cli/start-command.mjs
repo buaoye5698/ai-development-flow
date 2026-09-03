@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 
 import { loadActiveControl } from "../controller/index.mjs";
@@ -114,8 +113,8 @@ function expandedTaskRequest({ shortRequest, taskId, baseRevision, stageId, task
   return request;
 }
 
-function defaultWorktreePath(projectId, runId) {
-  return path.join(os.tmpdir(), "ai-flow-worktrees", `${projectId}-${runId}`);
+function defaultWorktreePath(projectRoot, projectId, runId) {
+  return path.join(projectRoot, "temp", "worktrees", `${projectId}-${runId}`);
 }
 
 function logicalCommand(name, argumentsList) {
@@ -377,7 +376,7 @@ export function startTaskCommand({
 
     const runId = portableId(shortRequest.runId, "runId", "RUN");
     const usesDefaultWorktree = worktreePath === null;
-    const targetWorktree = worktreePath ?? defaultWorktreePath(active.config.projectId, runId);
+    const targetWorktree = worktreePath ?? defaultWorktreePath(ctx.projectRoot, active.config.projectId, runId);
     if (!path.isAbsolute(targetWorktree)) {
       operationError("START_WORKTREE_NOT_ABSOLUTE", "--worktree must be an absolute path", {
         path: targetWorktree,

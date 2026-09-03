@@ -55,7 +55,7 @@ ai-flow check --project <directory>
 ai-flow start --project <directory> --input <request.json> --mode auto --json
 ```
 
-`start` 会读取当前完整 HEAD，自动生成 task ID 与 UTC 时间；只有一个兼容 stage gate 时还会自动选择 stage。它随后调用既有 `task compile` 生成完整 TaskPacket，并由确定性资格检查选择执行层级。quick 在当前 Git 工作区生成 ContextManifest、Agent/Human Brief 和后续 task-bound verify 命令，不创建 run 或 worktree；full 才生成 run ID 并调用 controller 准备隔离 worktree。多于一个兼容 stage 时必须在请求中提供 `stageId`。
+`start` 会读取当前完整 HEAD，自动生成 task ID 与 UTC 时间；只有一个兼容 stage gate 时还会自动选择 stage。它随后调用既有 `task compile` 生成完整 TaskPacket，并由确定性资格检查选择执行层级。quick 在当前 Git 工作区生成 ContextManifest、Agent/Human Brief 和后续 task-bound verify 命令，不创建 run 或 worktree；full 生成 run ID，并默认在项目 `temp/worktrees/` 下准备隔离 worktree。多于一个兼容 stage 时必须在请求中提供 `stageId`。
 
 模式触发规则固定如下：用户未指定时，AI 或宿主使用 `--mode auto`；用户明确说“快速处理”时使用 `quick`，明确要求完整流程时使用 `full`。只有已授权阶段中、无未决阻断、低风险、无副作用与外部权威、只使用仓库读写能力、只写 managed implementation、采用 quick verifier tier 且最高要求为 contract 证据的 implementation 才会得到 `selectedMode: "quick"`；否则返回 `selectedMode: "full"` 与原因。显式 `full`、`--worktree` 或 `--authorization` 始终选择完整流程。
 
@@ -138,7 +138,7 @@ ai-flow run abandon --project <directory> --run <run-id> --expected-run-digest <
 
 `advance` 在每个边界重算真实 diff、subjectContentDigest、资产分类和 impact，并复核 Active Control 与授权。发现范围或需求、验收、verifier 扩张时，当前任务 stale，必须重新编译，不能自动扩大。
 
-`resume` 只有在 task、base、control、worktree identity 和 checkpoint content 全部一致时恢复。若 controller 在 accepted/escalated RunRecord 落盘后、writer lock 删除前中断，对同一 terminal run 再次调用 `resume` 会安全且幂等地回收遗留锁。`abandon` 只把该 run 标为 escalated 并释放锁，保留 worktree、分支和用户内容供人工处理。
+`resume` 只有在 task、base、control、worktree identity 和 checkpoint content 全部一致时恢复。accepted 或 escalated 终态会把任务范围内的候选内容写入本地 Git 恢复引用，再注销并移除临时 worktree；不删除分支或远端引用。若 RunRecord 落盘后清理中断或失败，对同一 terminal run 再次调用 `resume` 会安全且幂等地重试清理并回收遗留锁。
 
 ## full 验证、审查与 EvidenceBundle
 

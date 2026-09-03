@@ -10,6 +10,7 @@ ai-dev/reviews/*.json
 ai-dev/runs/*.json
 ai-dev/tasks/*.json
 output/
+temp/
 tmp/
 test-out.txt
 test-tap.txt

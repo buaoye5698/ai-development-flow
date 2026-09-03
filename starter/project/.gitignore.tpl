@@ -1,6 +1,7 @@
 .ai-flow/cache/
 .ai-flow/controller/
 .ai-flow/generated/
+temp/
 .env
 .env.local
 credentials/

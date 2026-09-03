@@ -357,7 +357,7 @@ test("subject content digest ignores staging, commits, and evidence while preser
   );
 });
 
-test("mandatory review coverage and both briefs are deterministic without creating a second truth source", () => {
+test("requested review coverage and both briefs are deterministic without creating a second truth source", () => {
   const taskPacket = {
     taskId: "TASK-BRIEF",
     goal: "Change one bounded implementation file",
@@ -372,6 +372,7 @@ test("mandatory review coverage and both briefs are deterministic without creati
     review: {
       profileId: "default",
       mandatoryLensIds: ["evidence", "scope", "spec_conformance"],
+      requestedLensIds: ["evidence", "scope", "spec_conformance", "security"],
     },
     capabilities: [{ capabilityId: "repository_read" }, { capabilityId: "repository_write" }],
     risk: { level: "low", domains: ["logic"] },
@@ -394,6 +395,8 @@ test("mandatory review coverage and both briefs are deterministic without creati
   assert.equal(agent.content.includes("## Task constraints"), true);
   assert.equal(agent.content.includes("- Do not change existing product copy"), true);
   assert.equal(agent.content.includes("- Do not deploy"), true);
+  assert.equal(agent.content.includes("Required review lenses: evidence, scope, spec_conformance, security"), true);
+  assert.equal(human.content.includes("Review: evidence, scope, spec_conformance, security"), true);
   assert.equal(human.content.includes("docs/product-spec.md"), false);
 
   const missing = validateReviewCoverage({
@@ -402,6 +405,18 @@ test("mandatory review coverage and both briefs are deterministic without creati
     lensCoverage: [{ lensId: "scope", status: "covered" }],
   }, taskPacket);
   assert.equal(missing.errors.some((entry) => entry.code === "REVIEW_LENS_MISSING"), true);
+  const missingRequested = validateReviewCoverage({
+    profileId: "default",
+    verdict: "pass",
+    lensCoverage: [
+      { lensId: "evidence", status: "covered" },
+      { lensId: "scope", status: "covered" },
+      { lensId: "spec_conformance", status: "covered" },
+    ],
+  }, taskPacket);
+  assert.equal(missingRequested.errors.some(
+    (entry) => entry.code === "REVIEW_LENS_MISSING" && entry.lensId === "security",
+  ), true);
   const invalid = validateReviewCoverage({
     profileId: "default",
     verdict: "pass",
@@ -421,6 +436,7 @@ test("mandatory review coverage and both briefs are deterministic without creati
       { lensId: "evidence", status: "not_applicable", rationale: "No external evidence is in scope." },
       { lensId: "scope", status: "covered" },
       { lensId: "spec_conformance", status: "covered" },
+      { lensId: "security", status: "covered" },
     ],
   }, taskPacket);
   assert.equal(justified.ok, true);
@@ -592,8 +608,8 @@ test("controller enforces one writer, CAS, exact resume, capability progression,
     worktreePath: fixture.failedWorktreePath,
     at: "2026-08-30T00:59:00Z",
   }), (error) => error.code === "ARTIFACT_CONFLICT"
-    && error.errors.some((entry) => entry.code === "RUN_PREPARE_WORKTREE_PRESERVED"));
-  await access(fixture.failedWorktreePath);
+    && error.errors.some((entry) => entry.code === "RUN_PREPARE_WORKTREE_CLEANED"));
+  await assert.rejects(access(fixture.failedWorktreePath));
   await assert.rejects(access(path.join(fixture.projectRoot, ".ai-flow", "controller", "writer.lock")));
   const prepared = await prepareRun({
     project: fixture.projectRoot,
@@ -812,10 +828,15 @@ test("controller enforces one writer, CAS, exact resume, capability progression,
     runId: "RUN-CONTROLLER",
     expectedRunDigest: digestJson(verifying.runRecord),
     at: "2026-08-30T01:03:00Z",
-    reason: "Test completed without deleting candidate work",
+    reason: "Test completed with recoverable candidate cleanup",
   });
   assert.equal(abandoned.runRecord.state, "escalated");
-  await access(path.join(fixture.worktreePath, "src", "app.mjs"));
+  assert.equal(abandoned.worktreeCleanup.status, "removed");
+  await assert.rejects(access(fixture.worktreePath));
+  assert.equal(
+    await git(fixture.projectRoot, ["show", `${abandoned.worktreeCleanup.snapshotRef}:src/app.mjs`]),
+    "export const value = 2;",
+  );
   const writerLock = path.join(fixture.projectRoot, ".ai-flow", "controller", "writer.lock");
   await assert.rejects(access(writerLock));
   await writeFile(writerLock, `${JSON.stringify({
@@ -828,6 +849,7 @@ test("controller enforces one writer, CAS, exact resume, capability progression,
   });
   assert.equal(recoveredTerminal.terminal, true);
   assert.equal(recoveredTerminal.writerLockReleased, true);
+  assert.equal(recoveredTerminal.worktreeCleanup.status, "already_removed");
   assert.equal(recoveredTerminal.nextAction.kind, "none");
   assert.equal(recoveredTerminal.nextAction.terminalState, "escalated");
   await assert.rejects(access(writerLock));
@@ -836,6 +858,7 @@ test("controller enforces one writer, CAS, exact resume, capability progression,
     runId: "RUN-CONTROLLER",
   });
   assert.equal(repeatedRecovery.writerLockReleased, false);
+  assert.equal(repeatedRecovery.worktreeCleanup.status, "already_removed");
 });
 
 test("controller rechecks one consumed authorization without requiring a second nonce", async (t) => {
@@ -926,8 +949,13 @@ test("controller rechecks one consumed authorization without requiring a second 
     runId: "RUN-AUTHORIZED",
     expectedRunDigest: digestJson(implementing.runRecord),
     at: "2026-08-30T01:03:00Z",
-    reason: "Preserve the authorized candidate after the test",
+    reason: "Preserve the authorized candidate in a recovery ref",
   });
   assert.equal(abandoned.runRecord.state, "escalated");
-  await access(fixture.worktreePath);
+  assert.equal(abandoned.worktreeCleanup.status, "removed");
+  await assert.rejects(access(fixture.worktreePath));
+  assert.equal(
+    await git(fixture.projectRoot, ["show", `${abandoned.worktreeCleanup.snapshotRef}:src/app.mjs`]),
+    "export const value = 1;",
+  );
 });

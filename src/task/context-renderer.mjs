@@ -42,6 +42,7 @@ Forbidden paths: ${lineList(task.scope.forbiddenPaths)}
 Verifiers: ${lineList(task.verification.verifierIds)}
 Evidence target: ${task.verification.requiredEvidenceLevel}
 Mandatory review lenses: ${lineList(task.review.mandatoryLensIds)}
+Required review lenses: ${lineList(task.review.requestedLensIds)}
 Declared capabilities: ${lineList(task.capabilities.map((entry) => entry.capabilityId))}
 
 ## Context references
@@ -62,7 +63,7 @@ Kind: ${task.taskKind}
 Scope: ${lineList(task.scope.allowedPaths, "read-only evidence collection")}
 Risk: ${task.risk.level} (${lineList(task.risk.domains)})
 Verification: ${lineList(task.verification.verifierIds)}
-Review: ${lineList(task.review.mandatoryLensIds)}
+Review: ${lineList(task.review.requestedLensIds)}
 Base: ${task.baseRevision}
 Content: ${context.subjectContentDigest}
 `;

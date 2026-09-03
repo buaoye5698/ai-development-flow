@@ -89,14 +89,14 @@ prepare → implementing → verifying → reviewing
 ```
 
 1. `task compile` 从完整 base commit 自动生成 SpecIndex，并结合决策、impact map 和 verifier registry 生成 TaskPacket。
-2. `run prepare` 获取单写者锁、创建 detached worktree，并自动生成 ContextManifest 与 brief。
+2. full `start` 默认在项目 `temp/worktrees/` 下创建 detached worktree；直接调用 `run prepare` 时使用明确给出的全新绝对路径，并自动生成 ContextManifest 与 brief。
 3. Agent 只在 envelope 和 TaskPacket 范围内实现；Controller 根据真实 diff 重算内容、资产和影响。
 4. 确定性验证通过后，由新的 reviewer context 覆盖 `spec_conformance`、`scope`、`evidence`。
 5. `evidence seal` 绑定全部结果；`run advance` 复核新鲜度后接受，并直接返回下一次操作使用的 runDigest。
 
 `spec compile`、`context build/render` 和 `run inspect` 保留为诊断与恢复入口，不属于普通任务的必经步骤。
 
-`resume` 只有在 task、base、control、框架分发、worktree identity 和 checkpoint content 全部一致时恢复。`abandon` 只停止运行并保留现场，不删除用户内容。
+`resume` 只有在 task、base、control、框架分发、worktree identity 和 checkpoint content 全部一致时恢复。`accepted` 或 `abandon` 终态会先创建本地 Git 恢复引用，再注销并移除临时 worktree；清理中断时可用 `resume` 幂等重试。
 
 ## 验证、审查与完成定义
 

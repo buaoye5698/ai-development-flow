@@ -66,9 +66,9 @@ controller、宿主桥接和过程产物目录构成受信边界。canonical dig
 
 验收：暂存、取消暂存和提交状态不改变相同内容的摘要；换行字节差异会改变摘要；Evidence、任务、运行、审查和其他过程产物不进入被证明主体。
 
-**FRM-009（必须｜确定性控制器）** full 的 `run prepare|inspect|resume|advance|abandon` 必须以原子单写者锁、compare-and-swap 和 checkpoint 控制生命周期；prepare 只能在用户明确给出的全新路径创建 detached isolated worktree。quick 不创建或模拟 RunRecord。
+**FRM-009（必须｜确定性控制器）** full 的 `run prepare|inspect|resume|advance|abandon` 必须以原子单写者锁、compare-and-swap 和 checkpoint 控制生命周期；`start` 默认在项目的 `temp/worktrees/` 下生成全新路径，直接调用 prepare 时仍只能使用明确给出的全新绝对路径，两者都创建 detached isolated worktree。quick 不创建或模拟 RunRecord。
 
-验收：并发写者被拒绝；expectedRunDigest 不匹配不能 advance；prepare 与成功 advance 直接返回下一次操作所需的 runDigest；只有 task、base、control、worktree identity 和 checkpoint content 全部一致才可 resume；abandon 只升级状态并释放锁，不删除现场。
+验收：并发写者被拒绝；expectedRunDigest 不匹配不能 advance；prepare 与成功 advance 直接返回下一次操作所需的 runDigest；只有 task、base、control、worktree identity 和 checkpoint content 全部一致才可 resume；prepare 失败不遗留已创建的 worktree；accepted 或 escalated 终态先保留本地 Git 恢复引用，再注销并移除 worktree；清理可幂等重试，失败必须显式报告且不得伪装为已完成。
 
 **FRM-010（必须｜Active Control 裁判）** quick task-bound 验证与 full 的确定性验证、资产策略、Schema、impact map、verifier registry 和审查门都必须从 base revision 的 Active Control 加载。
 
@@ -100,7 +100,7 @@ controller、宿主桥接和过程产物目录构成受信边界。canonical dig
 
 **FRM-017（必须｜停止与受限返修）** quick 遇到未决决策、真相冲突、范围或 impact 扩大、裁判修改及任何不合格条件时必须停止或回落 full；full 在重复问题、A-B-A 振荡、轮次耗尽、授权问题或未经授权副作用时必须停止自动循环。任何返修仍受原 TaskPacket 约束。
 
-验收：任一停止条件出现时状态转为 blocked 或 escalated 并保留现场，不通过修改任务、规格、验收或证据门迁就实现。
+验收：任一停止条件出现时状态转为 blocked 或 escalated；非终态保留现场，终态按 FRM-009 保留恢复引用并清理临时 worktree；不通过修改任务、规格、验收或证据门迁就实现。
 
 **FRM-018（必须｜验证与交付）** 普通总检查必须覆盖核心安全不变量、quick 当前工作区路径和 full 隔离闭环，并只对实际分发的文本内容执行泄漏扫描；发布检查另行覆盖 vendored CLI、真实临时 Git worktree、打包清单与私有制品卫生，不以真实 Codex、网络或 GitHub 作为测试裁判。
 
@@ -118,7 +118,7 @@ controller、宿主桥接和过程产物目录构成受信边界。canonical dig
 | AC-FRM-006 | 一次性授权 | 过期、篡改、越权和 nonce 重放全部拒绝 |
 | AC-FRM-007 | 指令与 brief | quick start 与 full prepare 自动生成上下文；nested AGENTS 正确绑定；双 brief 同源且 Agent Brief 展示任务约束 |
 | AC-FRM-008 | 内容摘要 | 原始字节和 Git mode 被证明；Git 状态与过程产物不影响摘要 |
-| AC-FRM-009 | 控制器恢复 | quick 不伪造 RunRecord；full 单写者、CAS、成功操作返回下一摘要、resume fail-closed、abandon 保留现场 |
+| AC-FRM-009 | 控制器恢复 | quick 不伪造 RunRecord；full 单写者、CAS、成功操作返回下一摘要、resume fail-closed；终态保留恢复引用并幂等清理临时 worktree |
 | AC-FRM-010 | 基准裁判 | Candidate registry、Schema、policy 和 AGENTS 不能改变当前裁判 |
 | AC-FRM-011 | 实际 impact | quick verify 与 full controller 都复核真实影响；扩张立即停止且不自动修改 TaskPacket |
 | AC-FRM-012 | 验证与审查 | quick 只声明确定性本地验证；full mandatory lenses 全覆盖且 verifier FAIL 不可被覆盖 |
@@ -126,7 +126,7 @@ controller、宿主桥接和过程产物目录构成受信边界。canonical dig
 | AC-FRM-014 | Evidence 绑定 | quick 不声明激活；full 证据精确绑定 subject 与外部激活目标且可判新鲜度 |
 | AC-FRM-015 | 副作用与敏感信息 | 请求与验证器副作用完整合并；外部写入需授权；敏感内容不进入上下文、日志和证据 |
 | AC-FRM-016 | 轻量宿主 | quick 当前工作区执行且不生成 full 产物；full 保留完整闭环；auto/quick 确定性分流且不合格回落 full |
-| AC-FRM-017 | 停止与返修 | quick 扩张立即停止或回落 full；full 停止条件 fail-closed；返修不越过原边界 |
+| AC-FRM-017 | 停止与返修 | quick 扩张立即停止或回落 full；full 停止条件 fail-closed；返修不越过原边界；终态清理不丢失恢复引用 |
 | AC-FRM-018 | 总检查与发布检查 | 普通检查覆盖 quick 与 full 安全语义且只扫描分发文本；发布检查只验证本地制品与真实临时 worktree |
 
 ## 5. 需求追踪

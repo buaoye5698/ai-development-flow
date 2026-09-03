@@ -10,7 +10,7 @@
       "path": "docs/framework-spec.md",
       "role": "product_content_truth",
       "authority": "canonical",
-      "digest": "sha256:6f4378a018432e294246a49b7238352abd690ee964df64cead5fb71a13313db6"
+      "digest": "sha256:722d9e67569268ad00c296518f09f99fce242a3b599479352ecccf712152afe5"
     }
   ],
   "knownConflicts": [],
